@@ -137,7 +137,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, for
           <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#FF9933] to-[#800000] text-[#F3E5AB] flex items-center justify-center mx-auto mb-3 shadow-md">
             <Sparkles className="w-8 h-8" />
           </div>
-          <h3 className="font-['Yatra_One',serif] text-2xl text-[#6B1212]">
+          <h3 className="font-['Tiro_Devanagari_Marathi','Rozha_One',serif] font-bold text-2xl text-[#6B1212]">
             आरती संग्रह PDF पेमेंट
           </h3>
           <p className="text-xs text-[#665544] mt-1">
@@ -196,7 +196,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, for
         <button
           onClick={handlePay}
           disabled={loading}
-          className="w-full py-3.5 bg-gradient-to-r from-[#FF9933] via-[#E65100] to-[#800000] text-white font-['Yatra_One',serif] text-lg rounded-xl shadow-xl hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+          className="w-full py-3.5 bg-gradient-to-r from-[#FF9933] via-[#E65100] to-[#800000] text-white font-['Noto_Sans_Devanagari',sans-serif] font-bold text-lg rounded-xl shadow-xl hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
         >
           {loading ? (
             <>
