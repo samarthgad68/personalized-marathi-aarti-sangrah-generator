@@ -1,0 +1,6 @@
+{
+  "name": "Personalized Marathi Aarti Sangrah Generator",
+  "description": "Personalized 52-page Marathi Aarti Sangrah PDF generator with custom business branding, instant live preview, photo upload, and Razorpay payment integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
