@@ -1,82 +1,79 @@
-import React, { useState } from 'react';
-import { UserFormData, PolicyType } from './types';
-import { Header } from './components/Header';
-import { FeatureSection } from './components/FeatureSection';
-import { NoteSection } from './components/NoteSection';
-import { FormSection } from './components/FormSection';
-import { PreviewSection } from './components/PreviewSection';
-import { PaymentModal } from './components/PaymentModal';
-import { Footer } from './components/Footer';
+import React, { useState, useEffect } from 'react';
+import { PolicyType } from './types';
+import { HomePage } from './components/HomePage';
+import { GeneratorPage } from './components/GeneratorPage';
 import { PolicyModal } from './components/PolicyModal';
 
 export default function App() {
-  const [formData, setFormData] = useState<UserFormData>({
-    businessName: 'श्री गणेश ज्वेलर्स',
-    proprietorName: 'श्री. महेश जोशी',
-    address: 'दुकान क्र. ४, लक्ष्मी रोड, पुणे',
-    mobileNumber: '9876543210',
-    photoUrl: undefined,
-    photoFile: null,
+  const [currentPage, setCurrentPage] = useState<'home' | 'generator'>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path === '/generator' || window.location.hash === '#generator') {
+        return 'generator';
+      }
+    }
+    return 'home';
   });
 
-  const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [isPaymentOpen, setIsPaymentOpen] = useState<boolean>(false);
+  const [sessionToken, setSessionToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('aarti_paid_session');
+    }
+    return null;
+  });
+
   const [activePolicy, setActivePolicy] = useState<PolicyType>(null);
 
-  const scrollToPreview = () => {
-    const el = document.getElementById('preview-section');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/generator' || window.location.hash === '#generator') {
+        setCurrentPage('generator');
+      } else {
+        setCurrentPage('home');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handlePaymentSuccess = (token: string) => {
+    setSessionToken(token);
+    sessionStorage.setItem('aarti_paid_session', token);
+    setCurrentPage('generator');
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', '/generator');
     }
   };
 
-  const handleOpenPayment = () => {
-    setIsPaymentOpen(true);
+  const navigateToHome = () => {
+    setCurrentPage('home');
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', '/');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF6EE] text-[#3E2723] font-['Noto_Sans_Devanagari',sans-serif] flex flex-col justify-between">
-      <div>
-        {/* Header */}
-        <Header />
-
-        {/* Features Section */}
-        <FeatureSection />
-
-        {/* Important Notice */}
-        <NoteSection />
-
-        {/* Main Personalization Form */}
-        <FormSection
-          formData={formData}
-          setFormData={setFormData}
-          onPreview={scrollToPreview}
-          onGeneratePdf={handleOpenPayment}
-          isUploading={isUploading}
-          setIsUploading={setIsUploading}
+    <>
+      {currentPage === 'home' ? (
+        <HomePage
+          onPaymentSuccess={handlePaymentSuccess}
+          onOpenPolicy={(type) => setActivePolicy(type)}
         />
-
-        {/* Live Preview Engine */}
-        <PreviewSection
-          formData={formData}
-          onGeneratePdf={handleOpenPayment}
+      ) : (
+        <GeneratorPage
+          sessionToken={sessionToken}
+          onGoHome={navigateToHome}
+          onOpenPolicy={(type) => setActivePolicy(type)}
         />
-      </div>
+      )}
 
-      {/* Footer */}
-      <Footer onOpenPolicy={(type) => setActivePolicy(type)} />
-
-      {/* Modals */}
-      <PaymentModal
-        isOpen={isPaymentOpen}
-        onClose={() => setIsPaymentOpen(false)}
-        formData={formData}
-      />
-
+      {/* Global Legal Policy Modal */}
       <PolicyModal
         policyType={activePolicy}
         onClose={() => setActivePolicy(null)}
       />
-    </div>
+    </>
   );
 }

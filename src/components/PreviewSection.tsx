@@ -51,17 +51,17 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
           {/* BOTTOM PERSONALIZED SECTION (Bottom 450px of 1080x1920 = ~23.4% height) */}
           <div className="absolute bottom-0 left-0 right-0 h-[23.4%] flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 z-10">
             
-            {/* LEFT SIDE: Center Aligned 4 Text Lines (72% width) - Moved slightly downward */}
-            <div className="w-[72%] h-full flex flex-col justify-center items-center text-center pr-1 sm:pr-2 min-w-0 py-0.5 gap-0.5 my-auto overflow-hidden transform translate-y-0.5 sm:translate-y-1">
+            {/* LEFT SIDE: Center Aligned 4 Text Lines (65% width) - Moved 10px downward */}
+            <div className="w-[65%] h-full flex flex-col justify-center items-center text-center pr-1 sm:pr-2 min-w-0 py-0.5 gap-0.5 my-auto overflow-hidden transform translate-y-2 sm:translate-y-2.5">
               {/* Line 1: Maroon Color, Center Aligned */}
               <h4 
                 className="font-['Noto_Sans_Devanagari',sans-serif] font-bold text-[#bc0202] w-full leading-tight break-words"
                 style={{ 
                   fontSize: (formData.businessName || '').length > 35 
-                    ? 'clamp(14px, 3.2vw, 22px)' 
+                    ? 'clamp(12px, 2.8vw, 19px)' 
                     : (formData.businessName || '').length > 22 
-                    ? 'clamp(16px, 3.8vw, 28px)' 
-                    : 'clamp(18px, 4.5vw, 34px)' 
+                    ? 'clamp(14px, 3.4vw, 24px)' 
+                    : 'clamp(16px, 4vw, 30px)' 
                 }}
               >
                 {formData.businessName || 'नाव / व्यवसायाचे नाव'}
@@ -72,10 +72,10 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
                 className="font-['Noto_Sans_Devanagari',sans-serif] font-semibold text-black w-full leading-tight break-words"
                 style={{ 
                   fontSize: (formData.proprietorName || '').length > 35 
-                    ? 'clamp(13px, 2.8vw, 20px)' 
+                    ? 'clamp(11px, 2.5vw, 17px)' 
                     : (formData.proprietorName || '').length > 22 
-                    ? 'clamp(15px, 3.4vw, 24px)' 
-                    : 'clamp(16px, 3.8vw, 29px)' 
+                    ? 'clamp(13px, 3vw, 21px)' 
+                    : 'clamp(15px, 3.5vw, 25px)' 
                 }}
               >
                 {formData.proprietorName || 'प्रोप्रायटर / हुद्दा'}
@@ -86,10 +86,10 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
                 className="font-['Noto_Sans_Devanagari',sans-serif] font-medium text-black w-full leading-tight break-words"
                 style={{ 
                   fontSize: (formData.address || '').length > 40 
-                    ? 'clamp(12px, 2.4vw, 18px)' 
+                    ? 'clamp(10px, 2.2vw, 15px)' 
                     : (formData.address || '').length > 25 
-                    ? 'clamp(13px, 2.8vw, 20px)' 
-                    : 'clamp(14px, 3.2vw, 24px)' 
+                    ? 'clamp(11px, 2.5vw, 17px)' 
+                    : 'clamp(13px, 3vw, 21px)' 
                 }}
               >
                 {formData.address || 'पत्ता / इतर माहिती'}
@@ -99,19 +99,19 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
               <p 
                 className="font-['Noto_Sans_Devanagari',sans-serif] font-medium text-black w-full leading-tight break-words"
                 style={{ 
-                  fontSize: (formData.mobileNumber || '').length > 25 
-                    ? 'clamp(11px, 2.2vw, 15px)' 
-                    : (formData.mobileNumber || '').length > 18 
-                    ? 'clamp(12px, 2.6vw, 17px)' 
-                    : 'clamp(13px, 3vw, 20px)' 
+                  fontSize: (formData.mobileNumber || '').length > 20 
+                    ? 'clamp(10px, 2vw, 13px)' 
+                    : (formData.mobileNumber || '').length > 14 
+                    ? 'clamp(11px, 2.4vw, 15px)' 
+                    : 'clamp(12px, 2.8vw, 18px)' 
                 }}
               >
                 {formData.mobileNumber ? `मो. ${formData.mobileNumber}` : 'मोबाईल नंबर'}
               </p>
             </div>
 
-            {/* RIGHT SIDE: Customer Photo Frame (28% width) */}
-            <div className="w-[28%] h-full rounded-lg border-2 border-[#D4AF37] bg-[#FAF6EE] overflow-hidden flex items-center justify-center relative shadow-inner">
+            {/* RIGHT SIDE: Customer Photo Frame (35% width - increased 10px towards inside) */}
+            <div className="w-[35%] h-full rounded-lg border-2 border-[#D4AF37] bg-[#FAF6EE] overflow-hidden flex items-center justify-center relative shadow-inner">
               {formData.photoUrl ? (
                 <img
                   src={formData.photoUrl}

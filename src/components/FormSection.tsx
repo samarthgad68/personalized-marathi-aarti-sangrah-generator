@@ -112,9 +112,14 @@ export const FormSection: React.FC<FormSectionProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
             {/* Field 1: नाव / व्यवसायाचे नाव */}
             <div>
-              <label className="block text-xs md:text-sm font-bold text-[#3E2723] mb-1">
-                नाव / व्यवसायाचे नाव <span className="text-red-600">*</span>
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs md:text-sm font-bold text-[#3E2723]">
+                  नाव / व्यवसायाचे नाव <span className="text-red-600">*</span>
+                </label>
+                <span className="text-[10px] md:text-xs text-[#887766] font-medium">
+                  {formData.businessName?.length || 0}/45
+                </span>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#800000]">
                   <Building2 className="w-5 h-5" />
@@ -124,6 +129,7 @@ export const FormSection: React.FC<FormSectionProps> = ({
                   name="businessName"
                   value={formData.businessName}
                   onChange={handleChange}
+                  maxLength={45}
                   placeholder="उदा. श्री गणेश ज्वेलर्स"
                   className={`w-full pl-10 pr-3 py-2.5 bg-white text-[#3E2723] border ${
                     errors.businessName ? 'border-red-500' : 'border-[#D4AF37]'
@@ -135,9 +141,14 @@ export const FormSection: React.FC<FormSectionProps> = ({
 
             {/* Field 2: प्रोप्रायटर / हुद्दा */}
             <div>
-              <label className="block text-xs md:text-sm font-bold text-[#3E2723] mb-1">
-                प्रोप्रायटर / हुद्दा
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs md:text-sm font-bold text-[#3E2723]">
+                  प्रोप्रायटर / हुद्दा
+                </label>
+                <span className="text-[10px] md:text-xs text-[#887766] font-medium">
+                  {formData.proprietorName?.length || 0}/45
+                </span>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#800000]">
                   <User className="w-5 h-5" />
@@ -147,6 +158,7 @@ export const FormSection: React.FC<FormSectionProps> = ({
                   name="proprietorName"
                   value={formData.proprietorName}
                   onChange={handleChange}
+                  maxLength={45}
                   placeholder="उदा. श्री. महेश जोशी (संस्थापक)"
                   className="w-full pl-10 pr-3 py-2.5 bg-white text-[#3E2723] border border-[#D4AF37] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#800000] text-sm md:text-base font-medium"
                 />
@@ -155,9 +167,14 @@ export const FormSection: React.FC<FormSectionProps> = ({
 
             {/* Field 3: पत्ता / इतर माहिती */}
             <div>
-              <label className="block text-xs md:text-sm font-bold text-[#3E2723] mb-1">
-                पत्ता / इतर माहिती
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs md:text-sm font-bold text-[#3E2723]">
+                  पत्ता / इतर माहिती
+                </label>
+                <span className="text-[10px] md:text-xs text-[#887766] font-medium">
+                  {formData.address?.length || 0}/55
+                </span>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#800000]">
                   <MapPin className="w-5 h-5" />
@@ -167,6 +184,7 @@ export const FormSection: React.FC<FormSectionProps> = ({
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
+                  maxLength={55}
                   placeholder="उदा. दुकान क्र. ४, लक्ष्मी रोड, पुणे"
                   className="w-full pl-10 pr-3 py-2.5 bg-white text-[#3E2723] border border-[#D4AF37] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#800000] text-sm md:text-base font-medium"
                 />
@@ -175,9 +193,14 @@ export const FormSection: React.FC<FormSectionProps> = ({
 
             {/* Field 4: मोबाईल नंबर */}
             <div>
-              <label className="block text-xs md:text-sm font-bold text-[#3E2723] mb-1">
-                मोबाईल नंबर <span className="text-red-600">*</span>
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs md:text-sm font-bold text-[#3E2723]">
+                  मोबाईल नंबर <span className="text-red-600">*</span>
+                </label>
+                <span className="text-[10px] md:text-xs text-[#887766] font-medium">
+                  {formData.mobileNumber?.length || 0}/12
+                </span>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#800000]">
                   <Phone className="w-5 h-5" />
@@ -187,7 +210,7 @@ export const FormSection: React.FC<FormSectionProps> = ({
                   name="mobileNumber"
                   value={formData.mobileNumber}
                   onChange={handleChange}
-                  maxLength={10}
+                  maxLength={12}
                   placeholder="उदा. 9876543210"
                   className={`w-full pl-10 pr-3 py-2.5 bg-white text-[#3E2723] border ${
                     errors.mobileNumber ? 'border-red-500' : 'border-[#D4AF37]'

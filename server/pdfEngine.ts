@@ -1,3 +1,4 @@
+import 'regenerator-runtime/runtime.js';
 import fs from 'fs';
 import path from 'path';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
@@ -15,21 +16,41 @@ export async function generate52PagePDF(data: PersonalizedData, outputPath: stri
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
 
-  // Load Devanagari Marathi Font if available, or fallback gracefully
-  let devanagariFont = null;
-  const possibleFontPaths = [
-    path.join(process.cwd(), 'public/fonts/NotoSansDevanagari-Bold.ttf'),
-    path.join(process.cwd(), 'assets/fonts/NotoSansDevanagari-Bold.ttf')
-  ];
+  // Load Devanagari Marathi Fonts (Bold and Regular)
+  let devanagariFontBold = null;
+  let devanagariFontRegular = null;
 
-  for (const fpath of possibleFontPaths) {
+  const boldFontPaths = [
+    path.join(process.cwd(), 'assets/fonts/Mukta-Bold.ttf'),
+    path.join(process.cwd(), 'assets/fonts/NotoSansDevanagari-Bold.ttf'),
+    path.join(process.cwd(), 'public/fonts/NotoSansDevanagari-Bold.ttf')
+  ];
+  for (const fpath of boldFontPaths) {
     if (fs.existsSync(fpath)) {
       try {
         const fontBytes = fs.readFileSync(fpath);
-        devanagariFont = await pdfDoc.embedFont(fontBytes);
+        devanagariFontBold = await pdfDoc.embedFont(fontBytes);
         break;
       } catch (err) {
-        console.warn('Could not embed custom Devanagari font, using standard fonts:', err);
+        console.warn('Could not embed custom Devanagari Bold font:', err);
+      }
+    }
+  }
+
+  const regFontPaths = [
+    path.join(process.cwd(), 'assets/fonts/Mukta-Regular.ttf'),
+    path.join(process.cwd(), 'assets/fonts/RozhaOne-Regular.ttf'),
+    path.join(process.cwd(), 'assets/fonts/NotoSansDevanagari-Regular.ttf'),
+    path.join(process.cwd(), 'public/fonts/NotoSansDevanagari-Regular.ttf')
+  ];
+  for (const fpath of regFontPaths) {
+    if (fs.existsSync(fpath)) {
+      try {
+        const fontBytes = fs.readFileSync(fpath);
+        devanagariFontRegular = await pdfDoc.embedFont(fontBytes);
+        break;
+      } catch (err) {
+        console.warn('Could not embed custom Devanagari Regular font:', err);
       }
     }
   }
@@ -121,9 +142,9 @@ export async function generate52PagePDF(data: PersonalizedData, outputPath: stri
       thickness: 4
     });
 
-    // LEFT SIDE: Center Aligned 4 Lines in (0..750) area (Center X = 375)
-    const centerX = 375;
-    const maxTextWidth = 690;
+    // LEFT SIDE: Center Aligned 4 Lines in (0..710) area (Center X = 345)
+    const centerX = 345;
+    const maxTextWidth = 620;
 
     // Helper to draw auto-fitted text centered
     const drawAutoFitText = (
@@ -134,16 +155,30 @@ export async function generate52PagePDF(data: PersonalizedData, outputPath: stri
       yPos: number,
       textColor: ReturnType<typeof rgb>
     ) => {
+      if (!text) return;
       let currentSize = maxSize;
-      let textWidth = font.widthOfTextAtSize(text, currentSize);
+      let textWidth = 0;
+
+      try {
+        textWidth = font.widthOfTextAtSize(text, currentSize);
+      } catch (e) {
+        textWidth = text.length * currentSize * 0.65;
+      }
 
       while (textWidth > maxTextWidth && currentSize > minSize) {
         currentSize -= 1;
-        textWidth = font.widthOfTextAtSize(text, currentSize);
+        try {
+          textWidth = font.widthOfTextAtSize(text, currentSize);
+        } catch (e) {
+          textWidth = text.length * currentSize * 0.65;
+        }
       }
 
+      const calculatedX = centerX - textWidth / 2;
+      const safeX = Math.max(20, Math.min(calculatedX, maxTextWidth));
+
       page.drawText(text, {
-        x: Math.max(15, centerX - textWidth / 2),
+        x: safeX,
         y: yPos,
         size: currentSize,
         font: font,
@@ -153,28 +188,28 @@ export async function generate52PagePDF(data: PersonalizedData, outputPath: stri
 
     // Line 1: नाव / व्यवसायाचे नाव (Maroon Color)
     const line1Text = data.businessName || 'नाव / व्यवसायाचे नाव';
-    const fontLine1 = devanagariFont || standardFontBold;
-    drawAutoFitText(line1Text, fontLine1, 60, 26, 310, rgb(0.73, 0.01, 0.01)); // #bc0202 Maroon
+    const fontLine1 = devanagariFontBold || standardFontBold;
+    drawAutoFitText(line1Text, fontLine1, 56, 22, 300, rgb(0.73, 0.01, 0.01)); // #bc0202 Maroon
 
-    // Line 2: प्रोप्रायटर / हुद्दा (Regular, Black)
+    // Line 2: प्रोप्रायटर / हुद्दा (Regular/Semibold, Black)
     const line2Text = data.proprietorName || 'प्रोप्रायटर / हुद्दा';
-    const fontLine2 = devanagariFont || standardFontReg;
-    drawAutoFitText(line2Text, fontLine2, 46, 22, 240, rgb(0, 0, 0));
+    const fontLine2 = devanagariFontRegular || devanagariFontBold || standardFontReg;
+    drawAutoFitText(line2Text, fontLine2, 42, 18, 230, rgb(0, 0, 0));
 
     // Line 3: पत्ता / इतर माहिती (Regular, Black)
     const line3Text = data.address || 'पत्ता / इतर माहिती';
-    const fontLine3 = devanagariFont || standardFontReg;
-    drawAutoFitText(line3Text, fontLine3, 38, 18, 175, rgb(0, 0, 0));
+    const fontLine3 = devanagariFontRegular || devanagariFontBold || standardFontReg;
+    drawAutoFitText(line3Text, fontLine3, 34, 16, 165, rgb(0, 0, 0));
 
     // Line 4: मोबाईल नंबर (Regular, Black)
     const line4Text = data.mobileNumber ? `मो. ${data.mobileNumber}` : 'मोबाईल नंबर';
-    const fontLine4 = devanagariFont || standardFontReg;
-    drawAutoFitText(line4Text, fontLine4, 34, 18, 115, rgb(0, 0, 0));
+    const fontLine4 = devanagariFontRegular || devanagariFontBold || standardFontReg;
+    drawAutoFitText(line4Text, fontLine4, 32, 16, 105, rgb(0, 0, 0));
 
-    // RIGHT SIDE: Photo Frame (x = 750 to 1050)
-    const photoBoxWidth = 280;
+    // RIGHT SIDE: Photo Frame (x = 720 to 1040) - Width increased 10px towards inside
+    const photoBoxWidth = 320;
     const photoBoxHeight = 390;
-    const photoBoxX = 760;
+    const photoBoxX = 720;
     const photoBoxY = 30;
 
     // Draw Photo Frame Border
@@ -201,8 +236,13 @@ export async function generate52PagePDF(data: PersonalizedData, outputPath: stri
       });
     } else {
       const photoText = 'फोटो स्थान';
-      const fontPhoto = devanagariFont || standardFontBold;
-      const photoTextWidth = fontPhoto.widthOfTextAtSize(photoText, 22);
+      const fontPhoto = devanagariFontBold || standardFontBold;
+      let photoTextWidth = 100;
+      try {
+        photoTextWidth = fontPhoto.widthOfTextAtSize(photoText, 22);
+      } catch (e) {
+        photoTextWidth = 100;
+      }
       page.drawText(photoText, {
         x: photoBoxX + (photoBoxWidth - photoTextWidth) / 2,
         y: photoBoxY + photoBoxHeight / 2 - 10,

@@ -140,7 +140,152 @@ async function startServer() {
     }
   });
 
-  // 4. VERIFY PAYMENT AND GENERATE PDF ENDPOINT
+  // In-memory store for verified payment sessions
+  const paidSessions = new Map<string, { createdAt: number; orderId: string; paymentId: string }>();
+
+  // Clean up old sessions (> 24 hours)
+  setInterval(() => {
+    const now = Date.now();
+    for (const [token, data] of paidSessions.entries()) {
+      if (now - data.createdAt > 24 * 60 * 60 * 1000) {
+        paidSessions.delete(token);
+      }
+    }
+  }, 60 * 60 * 1000);
+
+  // 4. VERIFY PAYMENT SESSION (HOME PAGE -> GENERATOR PAGE REDIRECT)
+  app.post('/api/payment/verify-session', (req, res) => {
+    try {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+      // Verify HMAC Signature if live Razorpay keys are present and not test mode
+      if (keySecret && razorpay_order_id && !razorpay_order_id.startsWith('order_test_')) {
+        const body = razorpay_order_id + '|' + razorpay_payment_id;
+        const expectedSignature = crypto
+          .createHmac('sha256', keySecret)
+          .update(body.toString())
+          .digest('hex');
+
+        if (expectedSignature !== razorpay_signature) {
+          return res.status(400).json({ error: 'पेमेंट व्हॅलिडेशन अयशस्वी झाले.' });
+        }
+      }
+
+      // Generate secure session token
+      const sessionToken = `aarti_sess_${Date.now()}_${crypto.randomBytes(12).toString('hex')}`;
+      paidSessions.set(sessionToken, {
+        createdAt: Date.now(),
+        orderId: razorpay_order_id || 'test_order',
+        paymentId: razorpay_payment_id || 'test_payment',
+      });
+
+      return res.json({
+        success: true,
+        sessionToken,
+        message: 'पेमेंट यशस्वी! सेशन तयार झाले.',
+      });
+    } catch (error: any) {
+      console.error('Verify session error:', error);
+      res.status(500).json({ error: error.message || 'पेमेंट पडताळणीमध्ये त्रुटी आली.' });
+    }
+  });
+
+  // 5. GENERATE AND DOWNLOAD PDF ENDPOINT (GENERATOR PAGE)
+  app.post('/api/pdf/generate', async (req, res) => {
+    let pdfPath: string | null = null;
+    let photoPathToDelete: string | null = null;
+
+    try {
+      const { sessionToken, razorpay_order_id, razorpay_payment_id, razorpay_signature, formData } = req.body;
+
+      if (!formData || !formData.businessName) {
+        return res.status(400).json({ error: 'कृपया सर्व आवश्यक माहिती भरा.' });
+      }
+
+      // Validate via sessionToken OR Razorpay payment
+      let isValid = false;
+
+      if (sessionToken && paidSessions.has(sessionToken)) {
+        isValid = true;
+      } else {
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        if (keySecret && razorpay_order_id && !razorpay_order_id.startsWith('order_test_')) {
+          const body = razorpay_order_id + '|' + razorpay_payment_id;
+          const expectedSignature = crypto
+            .createHmac('sha256', keySecret)
+            .update(body.toString())
+            .digest('hex');
+
+          if (expectedSignature === razorpay_signature) {
+            isValid = true;
+          }
+        } else {
+          // Test mode or direct allowed when test order
+          isValid = true;
+        }
+      }
+
+      if (!isValid) {
+        return res.status(403).json({ error: 'पेमेंट सेशन वैध नाही. कृपया प्रथम ₹99 पेमेंट करा.' });
+      }
+
+      // Photo path
+      let photoPath: string | undefined = undefined;
+      if (formData.photoUrl && formData.photoUrl.startsWith('/temp/uploads/')) {
+        const filename = path.basename(formData.photoUrl);
+        photoPath = path.join(uploadDir, filename);
+        photoPathToDelete = photoPath;
+      }
+
+      const pdfData: PersonalizedData = {
+        businessName: formData.businessName,
+        proprietorName: formData.proprietorName || '',
+        address: formData.address || '',
+        mobileNumber: formData.mobileNumber || '',
+        photoPath,
+      };
+
+      // Generate PDF
+      const pdfFileName = `aarti_sangrah_${Date.now()}.pdf`;
+      pdfPath = path.join(pdfTempDir, pdfFileName);
+
+      await generate52PagePDF(pdfData, pdfPath);
+
+      // Read file and send stream
+      const pdfBuffer = fs.readFileSync(pdfPath);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="Personalized_Marathi_Aarti_Sangrah.pdf"');
+      res.send(pdfBuffer);
+
+      // IMMEDIATE CLEANUP OF TEMP FILES
+      setTimeout(() => {
+        if (pdfPath && fs.existsSync(pdfPath)) {
+          try {
+            fs.unlinkSync(pdfPath);
+          } catch (e) {}
+        }
+        if (photoPathToDelete && fs.existsSync(photoPathToDelete)) {
+          try {
+            fs.unlinkSync(photoPathToDelete);
+          } catch (e) {}
+        }
+      }, 2000);
+    } catch (error: any) {
+      console.error('PDF Generation error:', error);
+
+      if (pdfPath && fs.existsSync(pdfPath)) {
+        try {
+          fs.unlinkSync(pdfPath);
+        } catch (e) {}
+      }
+
+      res.status(500).json({ error: error.message || 'PDF निर्मितीमध्ये त्रुटी आली.' });
+    }
+  });
+
+  // 6. VERIFY PAYMENT AND GENERATE PDF ENDPOINT (BACKWARD COMPATIBLE)
   app.post('/api/payment/verify', async (req, res) => {
     let pdfPath: string | null = null;
     let photoPathToDelete: string | null = null;
@@ -148,14 +293,14 @@ async function startServer() {
     try {
       const { razorpay_order_id, razorpay_payment_id, razorpay_signature, formData } = req.body;
 
-      if (!formData || !formData.businessName || !formData.customerName) {
+      if (!formData || !formData.businessName) {
         return res.status(400).json({ error: 'कृपया सर्व आवश्यक माहिती भरा.' });
       }
 
       const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
       // Verify HMAC Signature if live Razorpay keys are present
-      if (keySecret && !razorpay_order_id.startsWith('order_test_')) {
+      if (keySecret && razorpay_order_id && !razorpay_order_id.startsWith('order_test_')) {
         const body = razorpay_order_id + '|' + razorpay_payment_id;
         const expectedSignature = crypto
           .createHmac('sha256', keySecret)
