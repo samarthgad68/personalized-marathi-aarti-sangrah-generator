@@ -1,3 +1,4 @@
+import regeneratorRuntime from 'regenerator-runtime';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -6,6 +7,13 @@ import multer from 'multer';
 import Razorpay from 'razorpay';
 import { createServer as createViteServer } from 'vite';
 import { generate52PagePDF, PersonalizedData } from './server/pdfEngine.js';
+
+if (typeof globalThis !== 'undefined') {
+  (globalThis as any).regeneratorRuntime = regeneratorRuntime;
+}
+if (typeof global !== 'undefined') {
+  (global as any).regeneratorRuntime = regeneratorRuntime;
+}
 
 // Ensure required directories exist
 const uploadDir = path.join(process.cwd(), 'temp/uploads');

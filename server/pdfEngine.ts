@@ -1,8 +1,15 @@
-import 'regenerator-runtime/runtime.js';
+import regeneratorRuntime from 'regenerator-runtime';
 import fs from 'fs';
 import path from 'path';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
+
+if (typeof globalThis !== 'undefined') {
+  (globalThis as any).regeneratorRuntime = regeneratorRuntime;
+}
+if (typeof global !== 'undefined') {
+  (global as any).regeneratorRuntime = regeneratorRuntime;
+}
 
 export interface PersonalizedData {
   businessName: string;   // Line 1: नाव / व्यवसायाचे नाव
