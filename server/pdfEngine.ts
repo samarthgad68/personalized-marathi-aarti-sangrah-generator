@@ -163,55 +163,99 @@ export async function generate52PagePDF(data: PersonalizedData, outputPath: stri
       textColor: ReturnType<typeof rgb>
     ) => {
       if (!text) return;
-      let currentSize = maxSize;
-      let textWidth = 0;
 
-      try {
-        textWidth = font.widthOfTextAtSize(text, currentSize);
-      } catch (e) {
-        textWidth = text.length * currentSize * 0.65;
-      }
+      // Word wrapping helper if text length exceeds available width
+      const wrapText = (str: string, sz: number): string[] => {
+        const words = str.split(' ');
+        const lines: string[] = [];
+        let currentLine = '';
 
-      while (textWidth > maxTextWidth && currentSize > minSize) {
-        currentSize -= 1;
-        try {
-          textWidth = font.widthOfTextAtSize(text, currentSize);
-        } catch (e) {
-          textWidth = text.length * currentSize * 0.65;
+        for (const word of words) {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          let testWidth = 0;
+          try {
+            testWidth = font.widthOfTextAtSize(testLine, sz);
+          } catch (e) {
+            testWidth = testLine.length * sz * 0.65;
+          }
+
+          if (testWidth <= maxTextWidth || !currentLine) {
+            currentLine = testLine;
+          } else {
+            lines.push(currentLine);
+            currentLine = word;
+          }
         }
+        if (currentLine) lines.push(currentLine);
+        return lines;
+      };
+
+      let currentSize = maxSize;
+      let lines = text.split('\n').flatMap(s => wrapText(s.trim(), currentSize)).filter(Boolean);
+
+      const getMaxLineWidth = (lineArr: string[], sz: number) => {
+        let maxW = 0;
+        for (const line of lineArr) {
+          let w = 0;
+          try {
+            w = font.widthOfTextAtSize(line, sz);
+          } catch (e) {
+            w = line.length * sz * 0.65;
+          }
+          if (w > maxW) maxW = w;
+        }
+        return maxW;
+      };
+
+      while (getMaxLineWidth(lines, currentSize) > maxTextWidth && currentSize > minSize) {
+        currentSize -= 1;
+        lines = text.split('\n').flatMap(s => wrapText(s.trim(), currentSize)).filter(Boolean);
       }
 
-      const calculatedX = centerX - textWidth / 2;
-      const safeX = Math.max(20, Math.min(calculatedX, maxTextWidth));
+      const lineHeight = currentSize * 1.25;
+      const totalHeight = (lines.length - 1) * lineHeight;
+      const startY = yPos + (totalHeight / 2);
 
-      page.drawText(text, {
-        x: safeX,
-        y: yPos,
-        size: currentSize,
-        font: font,
-        color: textColor
+      lines.forEach((line, index) => {
+        let textWidth = 0;
+        try {
+          textWidth = font.widthOfTextAtSize(line, currentSize);
+        } catch (e) {
+          textWidth = line.length * currentSize * 0.65;
+        }
+
+        const calculatedX = centerX - textWidth / 2;
+        const safeX = Math.max(20, Math.min(calculatedX, maxTextWidth));
+
+        page.drawText(line, {
+          x: safeX,
+          y: startY - (index * lineHeight),
+          size: currentSize,
+          font: font,
+          color: textColor
+        });
       });
     };
 
     // Line 1: नाव / व्यवसायाचे नाव (Maroon Color)
     const line1Text = data.businessName || 'नाव / व्यवसायाचे नाव';
     const fontLine1 = devanagariFontBold || standardFontBold;
-    drawAutoFitText(line1Text, fontLine1, 56, 22, 300, rgb(0.73, 0.01, 0.01)); // #bc0202 Maroon
+    drawAutoFitText(line1Text, fontLine1, 56, 22, 335, rgb(0.73, 0.01, 0.01)); // #bc0202 Maroon
 
     // Line 2: प्रोप्रायटर / हुद्दा (Regular/Semibold, Black)
     const line2Text = data.proprietorName || 'प्रोप्रायटर / हुद्दा';
     const fontLine2 = devanagariFontRegular || devanagariFontBold || standardFontReg;
-    drawAutoFitText(line2Text, fontLine2, 42, 18, 230, rgb(0, 0, 0));
+    drawAutoFitText(line2Text, fontLine2, 42, 18, 235, rgb(0, 0, 0));
 
     // Line 3: पत्ता / इतर माहिती (Regular, Black)
     const line3Text = data.address || 'पत्ता / इतर माहिती';
     const fontLine3 = devanagariFontRegular || devanagariFontBold || standardFontReg;
-    drawAutoFitText(line3Text, fontLine3, 34, 16, 165, rgb(0, 0, 0));
+    drawAutoFitText(line3Text, fontLine3, 34, 16, 140, rgb(0, 0, 0));
 
     // Line 4: मोबाईल नंबर (Regular, Black)
     const line4Text = data.mobileNumber ? `मो. ${data.mobileNumber}` : 'मोबाईल नंबर';
     const fontLine4 = devanagariFontRegular || devanagariFontBold || standardFontReg;
-    drawAutoFitText(line4Text, fontLine4, 32, 16, 105, rgb(0, 0, 0));
+    drawAutoFitText(line4Text, fontLine4, 32, 16, 50, rgb(0, 0, 0));
 
     // RIGHT SIDE: Photo Frame (x = 720 to 1040) - Width increased 10px towards inside
     const photoBoxWidth = 320;
