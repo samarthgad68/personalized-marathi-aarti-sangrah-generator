@@ -106,30 +106,34 @@ async function startServer() {
       const amount = 9900;
       const currency = 'INR';
 
-      // If Razorpay keys are provided, create live Razorpay order
+      // If Razorpay keys are provided, attempt to create live Razorpay order
       if (keyId && keySecret && !keyId.includes('your_key_id')) {
-        const instance = new Razorpay({
-          key_id: keyId,
-          key_secret: keySecret,
-        });
+        try {
+          const instance = new Razorpay({
+            key_id: keyId,
+            key_secret: keySecret,
+          });
 
-        const order = await instance.orders.create({
-          amount,
-          currency,
-          receipt: `rcpt_aarti_${Date.now()}`,
-          notes: {
-            purpose: 'Personalized Marathi Aarti Sangrah PDF',
-          },
-        });
+          const order = await instance.orders.create({
+            amount,
+            currency,
+            receipt: `rcpt_aarti_${Date.now()}`,
+            notes: {
+              purpose: 'Personalized Marathi Aarti Sangrah PDF',
+            },
+          });
 
-        return res.json({
-          success: true,
-          orderId: order.id,
-          amount: order.amount,
-          currency: order.currency,
-          keyId,
-          isTestMode: false,
-        });
+          return res.json({
+            success: true,
+            orderId: order.id,
+            amount: order.amount,
+            currency: order.currency,
+            keyId,
+            isTestMode: false,
+          });
+        } catch (razorpayErr: any) {
+          console.warn('Razorpay live order creation failed (invalid keys or network error, falling back to test mode):', razorpayErr?.error || razorpayErr);
+        }
       }
 
       // Fallback Test Mode when keys are missing or placeholders
