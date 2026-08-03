@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const assetsPagesDir = path.join(__dirname, '../assets/pages');
+const assetsPagesDir = path.join(__dirname, 'assets/pages');
 
 if (!fs.existsSync(assetsPagesDir)) {
   fs.mkdirSync(assetsPagesDir, { recursive: true });

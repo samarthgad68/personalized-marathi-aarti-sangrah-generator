@@ -58,7 +58,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onPaymentSuccess, onOpenPoli
         currency: orderRes.currency,
         name: 'वैयक्तिकृत आरती संग्रह',
         description: '५२ पानांची वैयक्तिकृत आरती संग्रह PDF',
-        image: '/assets/pages/Page 1.jpg',
+        image: '/assets/pages/Page%201.jpg',
         order_id: orderRes.orderId,
         handler: async (response: any) => {
           try {
@@ -113,7 +113,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onPaymentSuccess, onOpenPoli
         {/* Product Information & Features Section */}
         <FeatureSection />
 
-        {/* Sample Pages Thumbnail Preview Section */}
+        {/* Aarti Sangrah Gallery / Thumbnail Preview Section */}
         <ThumbnailPreview />
 
         {/* Prominent ₹99 CTA Payment Button Section */}

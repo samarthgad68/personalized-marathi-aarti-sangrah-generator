@@ -37,14 +37,10 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
           {/* Background Image: Page 1.jpg */}
           <div className="absolute inset-0 z-0">
             <img
-              src="/assets/pages/Page 1.jpg"
+              src="/assets/pages/Page%201.jpg"
               alt="Page 1 Preview"
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
-              onError={(e) => {
-                // Fallback to SVG if JPG is loading
-                (e.target as HTMLImageElement).src = '/assets/pages/Page 1.svg';
-              }}
             />
           </div>
 

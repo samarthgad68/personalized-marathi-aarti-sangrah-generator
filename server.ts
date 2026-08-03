@@ -11,8 +11,9 @@ import { generate52PagePDF, PersonalizedData } from './server/pdfEngine.js';
 const uploadDir = path.join(process.cwd(), 'temp/uploads');
 const pdfTempDir = path.join(process.cwd(), 'temp/pdf');
 const pagesDir = path.join(process.cwd(), 'assets/pages');
+const thumbnailsDir = path.join(process.cwd(), 'assets/thumbnails');
 
-[uploadDir, pdfTempDir, pagesDir].forEach((dir) => {
+[uploadDir, pdfTempDir, pagesDir, thumbnailsDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -256,6 +257,7 @@ async function startServer() {
       const pdfBuffer = fs.readFileSync(pdfPath);
 
       res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Length', pdfBuffer.length.toString());
       res.setHeader('Content-Disposition', 'attachment; filename="Personalized_Marathi_Aarti_Sangrah.pdf"');
       res.send(pdfBuffer);
 
@@ -338,6 +340,7 @@ async function startServer() {
       const pdfBuffer = fs.readFileSync(pdfPath);
 
       res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Length', pdfBuffer.length.toString());
       res.setHeader('Content-Disposition', 'attachment; filename="Personalized_Marathi_Aarti_Sangrah.pdf"');
       res.send(pdfBuffer);
 

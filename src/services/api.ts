@@ -78,9 +78,11 @@ export async function generatePDFWithSession(
   a.click();
 
   setTimeout(() => {
+    if (document.body.contains(a)) {
+      document.body.removeChild(a);
+    }
     window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  }, 100);
+  }, 15000);
 }
 
 export async function verifyPaymentAndDownloadPDF(paymentData: PaymentVerificationRequest): Promise<void> {
@@ -106,7 +108,9 @@ export async function verifyPaymentAndDownloadPDF(paymentData: PaymentVerificati
   a.click();
   
   setTimeout(() => {
+    if (document.body.contains(a)) {
+      document.body.removeChild(a);
+    }
     window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  }, 100);
+  }, 15000);
 }
