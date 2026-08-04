@@ -162,8 +162,8 @@ async function startServer() {
             keyId,
             isTestMode: false,
           });
-        } catch (razorpayErr: any) {
-          console.warn('Razorpay live order creation failed (invalid keys or network error, falling back to test mode):', razorpayErr?.error || razorpayErr);
+        } catch (_razorpayErr) {
+          // Live Razorpay keys missing/invalid - fallback gracefully to developer test mode
         }
       }
 

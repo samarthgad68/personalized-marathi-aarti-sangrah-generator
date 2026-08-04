@@ -40,6 +40,13 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
               src="/assets/pages/Page%201.jpg"
               alt="Page 1 Preview"
               className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.dataset.fallbackTried) {
+                  target.dataset.fallbackTried = 'true';
+                  target.src = '/assets/pages/Page%2001.jpg';
+                }
+              }}
               referrerPolicy="no-referrer"
             />
           </div>

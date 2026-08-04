@@ -8,11 +8,14 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<'home' | 'generator'>(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
-      if (path === '/home' || window.location.hash === '#home') {
-        return 'home';
+      if (path === '/generator' || window.location.hash === '#generator') {
+        const token = sessionStorage.getItem('aarti_paid_session');
+        if (token) {
+          return 'generator';
+        }
       }
     }
-    return 'generator';
+    return 'home';
   });
 
   const [sessionToken, setSessionToken] = useState<string | null>(() => {
