@@ -62,18 +62,35 @@ export async function generate52PagePDF(data: PersonalizedData, outputPath: stri
     }
   }
 
-  const standardFontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const standardFontReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  if (!devanagariFontBold) {
+    throw new Error('मराठी बोल्ड फॉन्ट (Devanagari Bold Font) लोड करता आला नाही.');
+  }
+  if (!devanagariFontRegular) {
+    devanagariFontRegular = devanagariFontBold;
+  }
 
   // Load uploaded photo if exists
   let embeddedPhoto = null;
   if (data.photoPath && fs.existsSync(data.photoPath)) {
     try {
       const photoBytes = fs.readFileSync(data.photoPath);
-      if (data.photoPath.toLowerCase().endsWith('.png')) {
-        embeddedPhoto = await pdfDoc.embedPng(photoBytes);
+      const isPng = data.photoPath.toLowerCase().endsWith('.png');
+      if (isPng) {
+        try {
+          embeddedPhoto = await pdfDoc.embedPng(photoBytes);
+        } catch (e) {
+          try {
+            embeddedPhoto = await pdfDoc.embedJpg(photoBytes);
+          } catch (e2) {}
+        }
       } else {
-        embeddedPhoto = await pdfDoc.embedJpg(photoBytes);
+        try {
+          embeddedPhoto = await pdfDoc.embedJpg(photoBytes);
+        } catch (e) {
+          try {
+            embeddedPhoto = await pdfDoc.embedPng(photoBytes);
+          } catch (e2) {}
+        }
       }
     } catch (photoErr) {
       console.warn('Could not embed photo, continuing without photo:', photoErr);
@@ -237,25 +254,25 @@ export async function generate52PagePDF(data: PersonalizedData, outputPath: stri
       });
     };
 
-    // Line 1: नाव / व्यवसायाचे नाव (Maroon Color)
+    // Line 1: नाव / व्यवसायाचे नाव (#d20202, Prominent)
     const line1Text = data.businessName || 'नाव / व्यवसायाचे नाव';
-    const fontLine1 = devanagariFontBold || standardFontBold;
-    drawAutoFitText(line1Text, fontLine1, 56, 22, 335, rgb(0.73, 0.01, 0.01)); // #bc0202 Maroon
+    const fontLine1 = devanagariFontBold;
+    drawAutoFitText(line1Text, fontLine1, 58, 22, 335, rgb(0.8235, 0.0078, 0.0078));
 
-    // Line 2: प्रोप्रायटर / हुद्दा (Regular/Semibold, Black)
+    // Line 2: प्रोप्रायटर / हुद्दा (Black, Prominent)
     const line2Text = data.proprietorName || 'प्रोप्रायटर / हुद्दा';
-    const fontLine2 = devanagariFontRegular || devanagariFontBold || standardFontReg;
-    drawAutoFitText(line2Text, fontLine2, 42, 18, 235, rgb(0, 0, 0));
+    const fontLine2 = devanagariFontRegular || devanagariFontBold;
+    drawAutoFitText(line2Text, fontLine2, 46, 20, 235, rgb(0, 0, 0));
 
-    // Line 3: पत्ता / इतर माहिती (Regular, Black)
+    // Line 3: पत्ता / इतर माहिती (Black)
     const line3Text = data.address || 'पत्ता / इतर माहिती';
-    const fontLine3 = devanagariFontRegular || devanagariFontBold || standardFontReg;
-    drawAutoFitText(line3Text, fontLine3, 34, 16, 140, rgb(0, 0, 0));
+    const fontLine3 = devanagariFontRegular || devanagariFontBold;
+    drawAutoFitText(line3Text, fontLine3, 38, 18, 140, rgb(0, 0, 0));
 
-    // Line 4: मोबाईल नंबर (Regular, Black)
+    // Line 4: मोबाईल नंबर (Black)
     const line4Text = data.mobileNumber ? `मो. ${data.mobileNumber}` : 'मोबाईल नंबर';
-    const fontLine4 = devanagariFontRegular || devanagariFontBold || standardFontReg;
-    drawAutoFitText(line4Text, fontLine4, 32, 16, 50, rgb(0, 0, 0));
+    const fontLine4 = devanagariFontRegular || devanagariFontBold;
+    drawAutoFitText(line4Text, fontLine4, 36, 18, 50, rgb(0, 0, 0));
 
     // RIGHT SIDE: Photo Frame (x = 720 to 1040) - Width increased 10px towards inside
     const photoBoxWidth = 320;
@@ -287,7 +304,7 @@ export async function generate52PagePDF(data: PersonalizedData, outputPath: stri
       });
     } else {
       const photoText = 'फोटो स्थान';
-      const fontPhoto = devanagariFontBold || standardFontBold;
+      const fontPhoto = devanagariFontBold;
       let photoTextWidth = 100;
       try {
         photoTextWidth = fontPhoto.widthOfTextAtSize(photoText, 22);

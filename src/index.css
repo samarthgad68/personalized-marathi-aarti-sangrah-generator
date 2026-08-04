@@ -1,1 +1,50 @@
 @import "tailwindcss";
+
+@theme {
+  --font-noto: "Noto Sans Devanagari", sans-serif;
+  --font-anek: "Anek Devanagari", sans-serif;
+  --font-mukta: "Mukta", sans-serif;
+  --font-rozha: "Rozha One", serif;
+  --font-tiro: "Tiro Devanagari Marathi", serif;
+  --font-yatra: "Yatra One", serif;
+
+  --color-saffron: #FF9933;
+  --color-maroon: #800000;
+  --color-deep-maroon: #6B1212;
+  --color-gold: #D4AF37;
+  --color-cream: #FAF6EE;
+  --color-gold-light: #F3E5AB;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: "Noto Sans Devanagari", sans-serif;
+  }
+
+  body {
+    background-color: #FAF6EE;
+    color: #3E2723;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF6EE;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4AF37;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #800000;
+}

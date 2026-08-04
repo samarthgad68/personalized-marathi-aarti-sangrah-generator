@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import regeneratorRuntime from 'regenerator-runtime';
 import express from 'express';
 import path from 'path';
@@ -5,7 +6,6 @@ import fs from 'fs';
 import crypto from 'crypto';
 import multer from 'multer';
 import Razorpay from 'razorpay';
-import { createServer as createViteServer } from 'vite';
 import { generate52PagePDF, PersonalizedData } from './server/pdfEngine.js';
 
 if (typeof globalThis !== 'undefined') {
@@ -54,16 +54,47 @@ const upload = multer({
   fileFilter,
 });
 
+// Helper function to resolve photo path from URL or base64 data
+function resolvePhotoPath(photoUrl?: string): { photoPath?: string; photoPathToDelete?: string } {
+  if (!photoUrl) return {};
+
+  if (photoUrl.startsWith('/temp/uploads/')) {
+    const filename = path.basename(photoUrl);
+    const photoPath = path.join(uploadDir, filename);
+    if (fs.existsSync(photoPath)) {
+      return { photoPath, photoPathToDelete: photoPath };
+    }
+  } else if (photoUrl.startsWith('data:image/')) {
+    try {
+      const matches = photoUrl.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        const filename = `base64_photo_${Date.now()}_${Math.round(Math.random() * 1e6)}.${ext}`;
+        const photoPath = path.join(uploadDir, filename);
+        fs.writeFileSync(photoPath, buffer);
+        return { photoPath, photoPathToDelete: photoPath };
+      }
+    } catch (e) {
+      console.warn('Failed to parse base64 photoUrl:', e);
+    }
+  } else if (fs.existsSync(photoUrl)) {
+    return { photoPath: photoUrl };
+  }
+
+  return {};
+}
+
 async function startServer() {
   const app = express();
-  const PORT = parseInt(process.env.PORT || '3000', 10);
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
   // Static route for serving assets and temp uploads for live preview
-  app.use('/assets/pages', express.static(path.join(process.cwd(), 'assets/pages')));
-  app.use('/assets', express.static(path.join(process.cwd(), 'assets')));
+  app.use('/assets/pages', express.static(pagesDir));
+  app.use('/assets/thumbnails', express.static(thumbnailsDir));
+  app.use('/assets/fonts', express.static(path.join(process.cwd(), 'assets/fonts')));
   app.use('/temp/uploads', express.static(uploadDir));
 
   // 1. HEALTHCHECK ENDPOINT
@@ -244,12 +275,9 @@ async function startServer() {
       }
 
       // Photo path
-      let photoPath: string | undefined = undefined;
-      if (formData.photoUrl && formData.photoUrl.startsWith('/temp/uploads/')) {
-        const filename = path.basename(formData.photoUrl);
-        photoPath = path.join(uploadDir, filename);
-        photoPathToDelete = photoPath;
-      }
+      const resolved = resolvePhotoPath(formData.photoUrl);
+      const photoPath = resolved.photoPath;
+      photoPathToDelete = resolved.photoPathToDelete || null;
 
       const pdfData: PersonalizedData = {
         businessName: formData.businessName,
@@ -271,21 +299,24 @@ async function startServer() {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Length', pdfBuffer.length.toString());
       res.setHeader('Content-Disposition', 'attachment; filename="Personalized_Marathi_Aarti_Sangrah.pdf"');
+      res.setHeader('Access-Control-Allow-Origin', '*');
       res.send(pdfBuffer);
 
-      // IMMEDIATE CLEANUP OF TEMP FILES
-      setTimeout(() => {
-        if (pdfPath && fs.existsSync(pdfPath)) {
-          try {
-            fs.unlinkSync(pdfPath);
-          } catch (e) {}
-        }
-        if (photoPathToDelete && fs.existsSync(photoPathToDelete)) {
-          try {
-            fs.unlinkSync(photoPathToDelete);
-          } catch (e) {}
-        }
-      }, 2000);
+      // Clean up temp files when response finishes
+      res.on('finish', () => {
+        setTimeout(() => {
+          if (pdfPath && fs.existsSync(pdfPath)) {
+            try {
+              fs.unlinkSync(pdfPath);
+            } catch (e) {}
+          }
+          if (photoPathToDelete && fs.existsSync(photoPathToDelete)) {
+            try {
+              fs.unlinkSync(photoPathToDelete);
+            } catch (e) {}
+          }
+        }, 5000);
+      });
     } catch (error: any) {
       console.error('PDF Generation error:', error);
 
@@ -327,12 +358,9 @@ async function startServer() {
       }
 
       // Photo path
-      let photoPath: string | undefined = undefined;
-      if (formData.photoUrl && formData.photoUrl.startsWith('/temp/uploads/')) {
-        const filename = path.basename(formData.photoUrl);
-        photoPath = path.join(uploadDir, filename);
-        photoPathToDelete = photoPath;
-      }
+      const resolved = resolvePhotoPath(formData.photoUrl);
+      const photoPath = resolved.photoPath;
+      photoPathToDelete = resolved.photoPathToDelete || null;
 
       const pdfData: PersonalizedData = {
         businessName: formData.businessName,
@@ -354,21 +382,24 @@ async function startServer() {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Length', pdfBuffer.length.toString());
       res.setHeader('Content-Disposition', 'attachment; filename="Personalized_Marathi_Aarti_Sangrah.pdf"');
+      res.setHeader('Access-Control-Allow-Origin', '*');
       res.send(pdfBuffer);
 
-      // IMMEDIATE CLEANUP OF TEMP FILES (Upload Photo + Generated PDF)
-      setTimeout(() => {
-        if (pdfPath && fs.existsSync(pdfPath)) {
-          try {
-            fs.unlinkSync(pdfPath);
-          } catch (e) {}
-        }
-        if (photoPathToDelete && fs.existsSync(photoPathToDelete)) {
-          try {
-            fs.unlinkSync(photoPathToDelete);
-          } catch (e) {}
-        }
-      }, 2000);
+      // Clean up temp files when response finishes
+      res.on('finish', () => {
+        setTimeout(() => {
+          if (pdfPath && fs.existsSync(pdfPath)) {
+            try {
+              fs.unlinkSync(pdfPath);
+            } catch (e) {}
+          }
+          if (photoPathToDelete && fs.existsSync(photoPathToDelete)) {
+            try {
+              fs.unlinkSync(photoPathToDelete);
+            } catch (e) {}
+          }
+        }, 5000);
+      });
     } catch (error: any) {
       console.error('PDF Generation / Payment Verification error:', error);
 
@@ -385,6 +416,7 @@ async function startServer() {
 
   // VITE OR STATIC SERVER MIDDLEWARE
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -393,14 +425,27 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    app.get('*', (req, res) => {
+      if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API route not found' });
+      }
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Application build not found.');
+      }
     });
   }
 
+  const PORT = 3000;
+
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});

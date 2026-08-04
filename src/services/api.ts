@@ -50,16 +50,39 @@ export async function verifyPaymentSession(paymentDetails: {
   return response.json();
 }
 
+async function resolvePhotoUrlForPayload(photoUrl?: string): Promise<string | undefined> {
+  if (!photoUrl) return undefined;
+  if (photoUrl.startsWith('blob:')) {
+    try {
+      const res = await fetch(photoUrl);
+      const blob = await res.blob();
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(undefined as any);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('Could not convert blob URL to base64:', e);
+      return undefined;
+    }
+  }
+  return photoUrl;
+}
+
 export async function generatePDFWithSession(
   sessionToken: string | null,
   formData: Omit<UserFormData, 'photoFile'>
 ): Promise<void> {
+  const resolvedPhotoUrl = await resolvePhotoUrlForPayload(formData.photoUrl);
+  const payloadFormData = { ...formData, photoUrl: resolvedPhotoUrl };
+
   const response = await fetch('/api/pdf/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       sessionToken,
-      formData,
+      formData: payloadFormData,
     }),
   });
 
@@ -86,10 +109,16 @@ export async function generatePDFWithSession(
 }
 
 export async function verifyPaymentAndDownloadPDF(paymentData: PaymentVerificationRequest): Promise<void> {
+  const resolvedPhotoUrl = await resolvePhotoUrlForPayload(paymentData.formData.photoUrl);
+  const payloadFormData = { ...paymentData.formData, photoUrl: resolvedPhotoUrl };
+
   const response = await fetch('/api/payment/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(paymentData),
+    body: JSON.stringify({
+      ...paymentData,
+      formData: payloadFormData,
+    }),
   });
 
   if (!response.ok) {

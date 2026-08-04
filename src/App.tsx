@@ -8,11 +8,11 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<'home' | 'generator'>(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
-      if (path === '/generator' || window.location.hash === '#generator') {
-        return 'generator';
+      if (path === '/home' || window.location.hash === '#home') {
+        return 'home';
       }
     }
-    return 'home';
+    return 'generator';
   });
 
   const [sessionToken, setSessionToken] = useState<string | null>(() => {

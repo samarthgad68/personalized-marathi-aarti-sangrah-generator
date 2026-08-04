@@ -8,6 +8,12 @@ export const Header: React.FC = () => {
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
       <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
+        {/* Server Load Notice Banner */}
+        <div className="mb-4 bg-[#6B1212] text-[#F3E5AB] px-3.5 py-1.5 rounded-full border border-[#D4AF37] text-xs sm:text-sm font-bold shadow-md flex items-center justify-center gap-2 max-w-2xl mx-auto">
+          <span className="w-2 h-2 rounded-full bg-[#FF9933] animate-ping shrink-0" />
+          <span>सध्या सर्व्हरवर जास्त वापर असल्यामुळे PDF तयार होण्यासाठी थोडा वेळ लागू शकतो. कृपया Back जाऊ नका, Page Refresh करू नका आणि इंटरनेट कनेक्शन सुरू असल्याची खात्री करा.</span>
+        </div>
+
         {/* Beautiful Ganpati Image Emblem */}
         <div className="mb-5 relative">
           <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-tr from-[#FF9933] via-[#D4AF37] to-[#FFFDF8] p-2 shadow-2xl flex items-center justify-center">
@@ -42,8 +48,8 @@ export const Header: React.FC = () => {
         </h1>
 
         {/* Subheading */}
-        <p className="font-['Anek_Devanagari','Noto_Sans_Devanagari',sans-serif] text-lg sm:text-xl md:text-2xl text-[#FAF6EE] max-w-2xl leading-relaxed font-semibold mt-2">
-          आपल्या नाव, फोटो व माहितीसह <span className="text-[#FF9933] font-bold underline decoration-[#D4AF37]">वैयक्तिकृत ५२ पानांचा आरती संग्रह</span> मिळवा.
+        <p className="font-['Anek_Devanagari','Noto_Sans_Devanagari',sans-serif] text-xl sm:text-2xl md:text-3xl text-[#FAF6EE] max-w-3xl leading-relaxed font-semibold mt-3">
+          आपल्या नाव, फोटो व माहितीसह <span className="text-2xl sm:text-3xl md:text-4xl text-[#FF9933] font-extrabold underline decoration-[#D4AF37] decoration-2">वैयक्तिकृत ५२ पानांचा आरती संग्रह</span> मिळवा.
         </p>
       </div>
     </header>

@@ -14,11 +14,18 @@ export const NoteSection: React.FC = () => {
             <Info className="w-5 h-5" />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2 w-full">
             <h4 className="font-['Tiro_Devanagari_Marathi','Rozha_One',serif] text-[#6B1212] text-base md:text-lg flex items-center gap-2 font-bold">
               महत्त्वाची सूचना (Important Note)
             </h4>
-            <ul className="text-xs md:text-sm text-[#3E2723] space-y-1 font-['Anek_Devanagari','Noto_Sans_Devanagari',sans-serif] font-medium list-disc list-inside">
+
+            {/* Server Load Notice Banner */}
+            <div className="bg-[#800000] text-[#FFFDF8] p-2.5 rounded-lg border border-[#FF9933] flex items-center gap-2 text-xs sm:text-sm font-bold shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-[#FF9933] animate-pulse shrink-0" />
+              <span>सध्या सर्व्हरवर जास्त वापर असल्यामुळे PDF तयार होण्यासाठी थोडा वेळ लागू शकतो. कृपया Back जाऊ नका, Page Refresh करू नका आणि इंटरनेट कनेक्शन सुरू असल्याची खात्री करा.</span>
+            </div>
+
+            <ul className="text-xs md:text-sm text-[#3E2723] space-y-1 font-['Anek_Devanagari','Noto_Sans_Devanagari',sans-serif] font-medium list-disc list-inside pt-1">
               <li className="text-[#800000] font-bold">
                 कृपया सर्व माहिती स्पेलिंग तपासून अचूक भरा.
               </li>
