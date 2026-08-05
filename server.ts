@@ -33,24 +33,23 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
     const uniqueName = `user_photo_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`;
     cb(null, uniqueName);
   },
 });
 
 const fileFilter = (_req: express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-  if (allowedTypes.includes(file.mimetype)) {
+  if (file.mimetype.startsWith('image/') || ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('फक्त JPG, JPEG किंवा PNG फॉरमॅटमधील फोटो अपलोड करा.'));
+    cb(new Error('फक्त प्रतिमा (Image) फॉरमॅटमधील फोटो अपलोड करा.'));
   }
 };
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
   fileFilter,
 });
 
@@ -58,27 +57,42 @@ const upload = multer({
 function resolvePhotoPath(photoUrl?: string): { photoPath?: string; photoPathToDelete?: string } {
   if (!photoUrl) return {};
 
-  if (photoUrl.startsWith('/temp/uploads/')) {
+  if (photoUrl.includes('temp/uploads/')) {
     const filename = path.basename(photoUrl);
     const photoPath = path.join(uploadDir, filename);
-    if (fs.existsSync(photoPath)) {
-      return { photoPath, photoPathToDelete: photoPath };
+    if (fs.existsSync(photoPath) && fs.statSync(photoPath).size > 0) {
+      return { photoPath };
     }
   } else if (photoUrl.startsWith('data:image/')) {
     try {
-      const matches = photoUrl.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
-      if (matches) {
-        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-        const buffer = Buffer.from(matches[2], 'base64');
-        const filename = `base64_photo_${Date.now()}_${Math.round(Math.random() * 1e6)}.${ext}`;
-        const photoPath = path.join(uploadDir, filename);
-        fs.writeFileSync(photoPath, buffer);
-        return { photoPath, photoPathToDelete: photoPath };
+      const commaIdx = photoUrl.indexOf(',');
+      if (commaIdx !== -1) {
+        const header = photoUrl.slice(0, commaIdx);
+        const base64Data = photoUrl.slice(commaIdx + 1).replace(/\s+/g, '');
+
+        let ext = 'jpg';
+        if (header.includes('png')) ext = 'png';
+        else if (header.includes('webp')) ext = 'webp';
+        else if (header.includes('gif')) ext = 'gif';
+        else if (header.includes('svg')) ext = 'svg';
+
+        const buffer = Buffer.from(base64Data, 'base64');
+        if (buffer.length > 0) {
+          const filename = `base64_photo_${Date.now()}_${Math.round(Math.random() * 1e6)}.${ext}`;
+          const photoPath = path.join(uploadDir, filename);
+          fs.writeFileSync(photoPath, buffer);
+          return { photoPath, photoPathToDelete: photoPath };
+        }
       }
     } catch (e) {
       console.warn('Failed to parse base64 photoUrl:', e);
     }
-  } else if (fs.existsSync(photoUrl)) {
+  } else if (photoUrl.startsWith('/')) {
+    const absPath = path.join(process.cwd(), photoUrl);
+    if (fs.existsSync(absPath) && fs.statSync(absPath).size > 0) {
+      return { photoPath: absPath };
+    }
+  } else if (fs.existsSync(photoUrl) && fs.statSync(photoUrl).size > 0) {
     return { photoPath: photoUrl };
   }
 
@@ -88,8 +102,8 @@ function resolvePhotoPath(photoUrl?: string): { photoPath?: string; photoPathToD
 async function startServer() {
   const app = express();
 
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // Static route for serving assets and temp uploads for live preview
   app.use('/assets/pages', express.static(pagesDir));
@@ -107,24 +121,35 @@ async function startServer() {
   });
 
   // 2. PHOTO UPLOAD ENDPOINT
-  app.post('/api/upload', upload.single('photo'), (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'कृपया फोटो निवडा.' });
+  app.post('/api/upload', (req, res) => {
+    upload.single('photo')(req, res, (err: any) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ error: 'फोटोची साईज लहान करा (Max 25MB).' });
+        }
+        return res.status(400).json({ error: `अपलोड त्रुटी: ${err.message}` });
+      } else if (err) {
+        return res.status(400).json({ error: err.message || 'फोटो अपलोड अयशस्वी.' });
       }
-      const photoUrl = `/temp/uploads/${req.file.filename}`;
-      const photoPath = req.file.path;
 
-      res.json({
-        success: true,
-        photoUrl,
-        photoPath,
-        filename: req.file.filename,
-      });
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      res.status(500).json({ error: error.message || 'फोटो अपलोड अयशस्वी.' });
-    }
+      try {
+        if (!req.file) {
+          return res.status(400).json({ error: 'कृपया फोटो निवडा.' });
+        }
+        const photoUrl = `/temp/uploads/${req.file.filename}`;
+        const photoPath = req.file.path;
+
+        res.json({
+          success: true,
+          photoUrl,
+          photoPath,
+          filename: req.file.filename,
+        });
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        res.status(500).json({ error: error.message || 'फोटो अपलोड अयशस्वी.' });
+      }
+    });
   });
 
   // 3. CREATE RAZORPAY ORDER ENDPOINT

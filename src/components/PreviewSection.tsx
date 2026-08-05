@@ -32,7 +32,7 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
         </div>
 
         {/* PREVIEW CANVAS CONTAINER (Aspect Ratio 9:16 representing 1080x1920) */}
-        <div className="w-full max-w-sm sm:max-w-md mx-auto bg-[#FAF6EE] border-2 border-[#800000] rounded-xl shadow-2xl overflow-hidden relative aspect-[9/16]">
+        <div className="@container w-full max-w-sm sm:max-w-md mx-auto bg-[#FAF6EE] border-2 border-[#800000] rounded-xl shadow-2xl overflow-hidden relative aspect-[9/16]">
           
           {/* Background Image: Page 1.jpg */}
           <div className="absolute inset-0 z-0">
@@ -55,16 +55,16 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
           <div className="absolute bottom-0 left-0 right-0 h-[23.4%] flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 z-10">
             
             {/* LEFT SIDE: Center Aligned 4 Text Lines (65% width) - Vertically centered, larger text area */}
-            <div className="w-[65%] h-full flex flex-col justify-center items-center text-center px-1 sm:px-1.5 min-w-0 py-0.5 gap-0.5 my-auto overflow-hidden">
+            <div className="w-[65%] h-full flex flex-col justify-center items-center text-center px-1 sm:px-1.5 min-w-0 py-0.5 gap-[0.45cqw] my-auto overflow-hidden">
               {/* Line 1: Red/Maroon (#d20202), Bold, Center Aligned */}
               <h4 
-                className="font-['Noto_Sans_Devanagari',sans-serif] font-bold text-[#d20202] w-full leading-tight break-words text-center"
+                className="font-['Noto_Sans_Devanagari',sans-serif] font-bold text-[#d20202] w-full leading-[1.22] break-words text-center"
                 style={{ 
                   fontSize: (formData.businessName || '').length > 35 
-                    ? 'clamp(13px, 3.2vw, 22px)' 
+                    ? '4.91cqw' 
                     : (formData.businessName || '').length > 22 
-                    ? 'clamp(15px, 3.8vw, 27px)' 
-                    : 'clamp(18px, 4.5vw, 34px)' 
+                    ? '6.02cqw' 
+                    : '7.59cqw' 
                 }}
               >
                 {formData.businessName || 'नाव / व्यवसायाचे नाव'}
@@ -72,13 +72,13 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
 
               {/* Line 2: Bold, Black, Center Aligned */}
               <p 
-                className="font-['Noto_Sans_Devanagari',sans-serif] font-bold text-black w-full leading-tight break-words text-center"
+                className="font-['Noto_Sans_Devanagari',sans-serif] font-bold text-black w-full leading-[1.22] break-words text-center"
                 style={{ 
                   fontSize: (formData.proprietorName || '').length > 35 
-                    ? 'clamp(12px, 2.8vw, 19px)' 
+                    ? '4.24cqw' 
                     : (formData.proprietorName || '').length > 22 
-                    ? 'clamp(14px, 3.4vw, 23px)' 
-                    : 'clamp(16px, 4vw, 28px)' 
+                    ? '5.13cqw' 
+                    : '6.25cqw' 
                 }}
               >
                 {formData.proprietorName || 'प्रोप्रायटर / हुद्दा'}
@@ -86,13 +86,13 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
 
               {/* Line 3: Semibold, Black, Center Aligned */}
               <p 
-                className="font-['Noto_Sans_Devanagari',sans-serif] font-semibold text-black w-full leading-tight break-words text-center"
+                className="font-['Noto_Sans_Devanagari',sans-serif] font-semibold text-black w-full leading-[1.22] break-words text-center"
                 style={{ 
                   fontSize: (formData.address || '').length > 40 
-                    ? 'clamp(11px, 2.5vw, 17px)' 
+                    ? '3.80cqw' 
                     : (formData.address || '').length > 25 
-                    ? 'clamp(12px, 2.9vw, 20px)' 
-                    : 'clamp(14px, 3.4vw, 24px)' 
+                    ? '4.46cqw' 
+                    : '5.35cqw' 
                 }}
               >
                 {formData.address || 'पत्ता / इतर माहिती'}
@@ -100,13 +100,13 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({ formData, onGene
 
               {/* Line 4: Semibold, Black, Center Aligned */}
               <p 
-                className="font-['Noto_Sans_Devanagari',sans-serif] font-semibold text-black w-full leading-tight break-words text-center"
+                className="font-['Noto_Sans_Devanagari',sans-serif] font-semibold text-black w-full leading-[1.22] break-words text-center"
                 style={{ 
                   fontSize: (formData.mobileNumber || '').length > 20 
-                    ? 'clamp(11px, 2.4vw, 16px)' 
+                    ? '3.56cqw' 
                     : (formData.mobileNumber || '').length > 14 
-                    ? 'clamp(12px, 2.9vw, 19px)' 
-                    : 'clamp(14px, 3.4vw, 23px)' 
+                    ? '4.24cqw' 
+                    : '5.13cqw' 
                 }}
               >
                 {formData.mobileNumber ? `मो. ${formData.mobileNumber}` : 'मोबाईल नंबर'}

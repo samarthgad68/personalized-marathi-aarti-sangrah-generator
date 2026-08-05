@@ -33,13 +33,14 @@ export const FormSection: React.FC<FormSectionProps> = ({
   const handleFileChange = async (file: File | null) => {
     if (!file) return;
 
-    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-      setErrors((prev) => ({ ...prev, photo: 'फक्त JPG, JPEG किंवा PNG फोटो निवडा.' }));
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|jfif)$/i.test(file.name);
+    if (!isImage) {
+      setErrors((prev) => ({ ...prev, photo: 'फक्त प्रतिमा (JPG, PNG, WEBP) फोटो निवडा.' }));
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, photo: 'फोटोची साईज ५ MB पेक्षा कमी असावी.' }));
+    if (file.size > 25 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, photo: 'फोटोची साईज २५ MB पेक्षा कमी असावी.' }));
       return;
     }
 
@@ -51,10 +52,12 @@ export const FormSection: React.FC<FormSectionProps> = ({
       setFormData((prev) => ({ ...prev, photoFile: file, photoUrl: localUrl }));
 
       const res = await uploadPhoto(file);
-      setFormData((prev) => ({ ...prev, photoUrl: res.photoUrl }));
+      if (res && res.photoUrl) {
+        setFormData((prev) => ({ ...prev, photoUrl: res.photoUrl }));
+      }
     } catch (err: any) {
-      console.error('Photo upload error:', err);
-      setErrors((prev) => ({ ...prev, photo: err.message || 'फोटो अपलोड अयशस्वी.' }));
+      console.error('Photo upload warning:', err);
+      // Keep local preview URL so the user still sees their uploaded image
     } finally {
       setIsUploading(false);
     }

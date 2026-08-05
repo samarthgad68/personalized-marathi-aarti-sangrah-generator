@@ -2,7 +2,10 @@ import regeneratorRuntime from 'regenerator-runtime';
 import fs from 'fs';
 import path from 'path';
 import { PDFDocument, rgb } from 'pdf-lib';
+import * as fontkitModule from 'fontkit';
 import { createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
+
+const fontkit = (fontkitModule as any).default || fontkitModule;
 
 if (typeof globalThis !== 'undefined') {
   (globalThis as any).regeneratorRuntime = regeneratorRuntime;
@@ -26,10 +29,10 @@ function registerFonts() {
   if (fontsRegistered) return;
 
   const fontFiles = [
-    { name: 'NotoSansDevanagariBold', paths: ['assets/fonts/NotoSansDevanagari-Bold.ttf', 'public/fonts/NotoSansDevanagari-Bold.ttf'] },
-    { name: 'NotoSansDevanagariRegular', paths: ['assets/fonts/NotoSansDevanagari-Regular.ttf', 'public/fonts/NotoSansDevanagari-Regular.ttf'] },
-    { name: 'MuktaBold', paths: ['assets/fonts/Mukta-Bold.ttf'] },
-    { name: 'MuktaRegular', paths: ['assets/fonts/Mukta-Regular.ttf'] },
+    { name: 'MuktaBold', paths: ['assets/fonts/Mukta-Bold.ttf', 'assets/fonts/NotoSansDevanagari-Bold.ttf'] },
+    { name: 'MuktaRegular', paths: ['assets/fonts/Mukta-Regular.ttf', 'assets/fonts/NotoSansDevanagari-Regular.ttf'] },
+    { name: 'NotoSansDevanagariBold', paths: ['assets/fonts/NotoSansDevanagari-Bold.ttf', 'assets/fonts/Mukta-Bold.ttf'] },
+    { name: 'NotoSansDevanagariRegular', paths: ['assets/fonts/NotoSansDevanagari-Regular.ttf', 'assets/fonts/Mukta-Regular.ttf'] },
   ];
 
   for (const fontItem of fontFiles) {
@@ -73,19 +76,39 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
   const fontFamilyBold = 'NotoSansDevanagariBold, MuktaBold, sans-serif';
   const fontFamilyReg = 'NotoSansDevanagariRegular, MuktaRegular, sans-serif';
 
-  // Helper function to auto-fit, word-wrap, and render centered Devanagari & English text
-  const drawCenteredLine = (
-    text: string,
-    defaultSizePt: number,
-    isBold: boolean,
-    colorHex: string,
-    centerYPt: number
-  ) => {
-    if (!text) return;
+  // Helper function to prepare line specs and render grouped, centered text block
+  const lineSpecs = [
+    {
+      text: data.businessName || 'नाव / व्यवसायाचे नाव',
+      colorHex: '#d20202',
+      isBold: true,
+      defaultSizePt: (data.businessName || '').length > 35 ? 53 : (data.businessName || '').length > 22 ? 65 : 82
+    },
+    {
+      text: data.proprietorName || 'प्रोप्रायटर / हुद्दा',
+      colorHex: '#000000',
+      isBold: true,
+      defaultSizePt: (data.proprietorName || '').length > 35 ? 45.8 : (data.proprietorName || '').length > 22 ? 55.4 : 67.5
+    },
+    {
+      text: data.address || 'पत्ता / इतर माहिती',
+      colorHex: '#000000',
+      isBold: false,
+      defaultSizePt: (data.address || '').length > 40 ? 41 : (data.address || '').length > 25 ? 48.2 : 57.8
+    },
+    {
+      text: (data.mobileNumber ? `मो. ${data.mobileNumber}` : 'मोबाईल नंबर'),
+      colorHex: '#000000',
+      isBold: false,
+      defaultSizePt: (data.mobileNumber || '').length > 20 ? 38.5 : (data.mobileNumber || '').length > 14 ? 45.8 : 55.4
+    }
+  ];
 
-    const fontFam = isBold ? fontFamilyBold : fontFamilyReg;
-    const fontWeight = isBold ? 'bold' : '600';
-    let fontSize = defaultSizePt * scale;
+  // Prepare wrapped lines and dimensions for all items
+  const preparedItems = lineSpecs.map(spec => {
+    const fontFam = spec.isBold ? fontFamilyBold : fontFamilyReg;
+    const fontWeight = spec.isBold ? 'bold' : '600';
+    let fontSize = spec.defaultSizePt * scale;
 
     const wrapText = (str: string, sz: number): string[] => {
       ctx.font = `${fontWeight} ${sz}px ${fontFam}`;
@@ -106,42 +129,45 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
       return lines;
     };
 
-    let lines = wrapText(text.trim(), fontSize);
+    let lines = wrapText(spec.text.trim(), fontSize);
     while (lines.some(l => ctx.measureText(l).width > maxTextWidth) && fontSize > 18 * scale) {
       fontSize -= 2 * scale;
-      lines = wrapText(text.trim(), fontSize);
+      lines = wrapText(spec.text.trim(), fontSize);
     }
 
-    ctx.fillStyle = colorHex;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    const lineHeight = fontSize * 1.22;
+    const blockHeight = lines.length * lineHeight;
 
-    const lineHeight = fontSize * 1.25;
-    const totalHeight = lines.length * lineHeight;
-    let currentY = (centerYPt * scale) - (totalHeight / 2) + (lineHeight / 2);
+    return {
+      spec,
+      fontFam,
+      fontWeight,
+      fontSize,
+      lineHeight,
+      lines,
+      blockHeight
+    };
+  });
 
-    lines.forEach((line) => {
-      ctx.font = `${fontWeight} ${fontSize}px ${fontFam}`;
-      ctx.fillText(line, centerX, currentY);
-      currentY += lineHeight;
+  const interItemGap = 4.82 * scale; // Gap matching preview flex gap-[0.45cqw] (0.446% of container width)
+  const totalBlockHeight = preparedItems.reduce((acc, item) => acc + item.blockHeight, 0) + interItemGap * (preparedItems.length - 1);
+
+  // Vertically center the entire 4-line text block inside the 450pt (900px) height container
+  let currentY = (height / 2) - (totalBlockHeight / 2);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  preparedItems.forEach(item => {
+    ctx.fillStyle = item.spec.colorHex;
+    item.lines.forEach(line => {
+      ctx.font = `${item.fontWeight} ${item.fontSize}px ${item.fontFam}`;
+      const lineCenterY = currentY + item.lineHeight / 2;
+      ctx.fillText(line, centerX, lineCenterY);
+      currentY += item.lineHeight;
     });
-  };
-
-  // Line 1: नाव / व्यवसायाचे नाव (#d20202, Bold) - Center Y: 90pt
-  const line1Text = data.businessName || 'नाव / व्यवसायाचे नाव';
-  drawCenteredLine(line1Text, 52, true, '#d20202', 90);
-
-  // Line 2: प्रोप्रायटर / हुद्दा (Black, Bold) - Center Y: 185pt
-  const line2Text = data.proprietorName || 'प्रोप्रायटर / हुद्दा';
-  drawCenteredLine(line2Text, 42, true, '#000000', 185);
-
-  // Line 3: पत्ता / इतर माहिती (Black, SemiBold) - Center Y: 270pt
-  const line3Text = data.address || 'पत्ता / इतर माहिती';
-  drawCenteredLine(line3Text, 36, false, '#000000', 270);
-
-  // Line 4: मोबाईल नंबर (Black, SemiBold) - Center Y: 355pt
-  const line4Text = data.mobileNumber ? `मो. ${data.mobileNumber}` : 'मोबाईल नंबर';
-  drawCenteredLine(line4Text, 34, false, '#000000', 355);
+    currentY += interItemGap;
+  });
 
   // RIGHT SIDE: Photo Frame Box (X = 710 to 1040, Y = 30 to 420)
   const pX = 710 * scale;
@@ -159,21 +185,32 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
   let photoDrawn = false;
   if (data.photoPath && fs.existsSync(data.photoPath)) {
     try {
-      const photoImg = await loadImage(data.photoPath);
-      const margin = 8 * scale;
-      const targetW = pW - margin * 2;
-      const targetH = pH - margin * 2;
+      const photoStat = fs.statSync(data.photoPath);
+      if (photoStat.size > 0) {
+        let photoImg;
+        try {
+          photoImg = await loadImage(data.photoPath);
+        } catch {
+          // Retry reading as Buffer if path load fails
+          const imgBuf = fs.readFileSync(data.photoPath);
+          photoImg = await loadImage(imgBuf);
+        }
 
-      const factor = Math.min(targetW / photoImg.width, targetH / photoImg.height);
-      const drawW = photoImg.width * factor;
-      const drawH = photoImg.height * factor;
-      const drawX = pX + margin + (targetW - drawW) / 2;
-      const drawY = pY + margin + (targetH - drawH) / 2;
+        const margin = 8 * scale;
+        const targetW = pW - margin * 2;
+        const targetH = pH - margin * 2;
 
-      ctx.drawImage(photoImg, drawX, drawY, drawW, drawH);
-      photoDrawn = true;
-    } catch (photoErr) {
-      console.warn('Could not load photo into canvas:', photoErr);
+        const factor = Math.min(targetW / photoImg.width, targetH / photoImg.height);
+        const drawW = photoImg.width * factor;
+        const drawH = photoImg.height * factor;
+        const drawX = pX + margin + (targetW - drawW) / 2;
+        const drawY = pY + margin + (targetH - drawH) / 2;
+
+        ctx.drawImage(photoImg, drawX, drawY, drawW, drawH);
+        photoDrawn = true;
+      }
+    } catch (photoErr: any) {
+      console.warn('Photo image loading skipped:', photoErr?.message || photoErr);
     }
   }
 
@@ -190,6 +227,26 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
 
 export async function generate52PagePDF(data: PersonalizedData, outputPath: string): Promise<string> {
   const pdfDoc = await PDFDocument.create();
+
+  // Register fontkit on pdfDoc and embed Unicode Devanagari TTF fonts
+  pdfDoc.registerFontkit(fontkit);
+
+  const fontPathBold = path.join(process.cwd(), 'assets/fonts/Mukta-Bold.ttf');
+  const fontPathRegular = path.join(process.cwd(), 'assets/fonts/Mukta-Regular.ttf');
+  if (fs.existsSync(fontPathBold)) {
+    try {
+      await pdfDoc.embedFont(fs.readFileSync(fontPathBold));
+    } catch (fontErr) {
+      console.warn('Could not embed Mukta-Bold font:', fontErr);
+    }
+  }
+  if (fs.existsSync(fontPathRegular)) {
+    try {
+      await pdfDoc.embedFont(fs.readFileSync(fontPathRegular));
+    } catch (fontErr) {
+      console.warn('Could not embed Mukta-Regular font:', fontErr);
+    }
+  }
 
   // Generate the high-resolution shaped footer image
   const footerPngBuffer = await renderFooterPngBuffer(data);
