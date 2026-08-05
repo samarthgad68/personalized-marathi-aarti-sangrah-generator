@@ -439,6 +439,15 @@ async function startServer() {
     }
   });
 
+  // Serve static assets directory (for /assets/pages/* and /assets/fonts/*)
+  const assetsDir = path.join(process.cwd(), 'assets');
+  if (fs.existsSync(assetsDir)) {
+    app.use('/assets', express.static(assetsDir));
+  }
+  if (fs.existsSync(uploadDir)) {
+    app.use('/temp/uploads', express.static(uploadDir));
+  }
+
   // 404 handler for API routes (returns JSON instead of falling through to HTML SPA fallback)
   app.all('/api/*', (req, res) => {
     res.status(404).json({ error: `API endpoint not found: ${req.method} ${req.path}` });

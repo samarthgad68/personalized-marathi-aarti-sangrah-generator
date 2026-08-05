@@ -25,22 +25,34 @@ let fontsRegistered = false;
 function registerFonts() {
   if (fontsRegistered) return;
 
-  const fontFiles = [
-    { name: 'MuktaBold', paths: ['assets/fonts/Mukta-Bold.ttf', 'assets/fonts/NotoSansDevanagari-Bold.ttf'] },
-    { name: 'MuktaRegular', paths: ['assets/fonts/Mukta-Regular.ttf', 'assets/fonts/NotoSansDevanagari-Regular.ttf'] },
-    { name: 'NotoSansDevanagariBold', paths: ['assets/fonts/NotoSansDevanagari-Bold.ttf', 'assets/fonts/Mukta-Bold.ttf'] },
-    { name: 'NotoSansDevanagariRegular', paths: ['assets/fonts/NotoSansDevanagari-Regular.ttf', 'assets/fonts/Mukta-Regular.ttf'] },
+  try {
+    (GlobalFonts as any).loadSystemFonts?.();
+  } catch (err) {
+    console.warn('Could not load system fonts:', err);
+  }
+
+  const fontDirs = [
+    path.join(process.cwd(), 'assets/fonts'),
+    path.join(process.cwd(), 'node_modules/@fontsource/noto-sans-devanagari/files'),
   ];
 
-  for (const fontItem of fontFiles) {
-    for (const p of fontItem.paths) {
-      const fullPath = path.isAbsolute(p) ? p : path.join(process.cwd(), p);
-      if (fs.existsSync(fullPath)) {
+  for (const fontDir of fontDirs) {
+    if (!fs.existsSync(fontDir)) continue;
+    const files = fs.readdirSync(fontDir);
+    for (const file of files) {
+      if (file.endsWith('.woff') || file.endsWith('.ttf') || file.endsWith('.otf')) {
+        const fullPath = path.join(fontDir, file);
         try {
-          GlobalFonts.registerFromPath(fullPath, fontItem.name);
-          break;
+          GlobalFonts.registerFromPath(fullPath, 'Noto Sans Devanagari');
+          GlobalFonts.registerFromPath(fullPath, 'Mukta');
+          if (file.includes('700') || file.includes('Bold') || file.includes('bold')) {
+            GlobalFonts.registerFromPath(fullPath, 'NotoSansDevanagariBold');
+          }
+          if (file.includes('400') || file.includes('Regular') || file.includes('regular')) {
+            GlobalFonts.registerFromPath(fullPath, 'NotoSansDevanagariRegular');
+          }
         } catch (err) {
-          console.warn(`Could not register font ${fontItem.name} from ${fullPath}:`, err);
+          // ignore duplicate or unparseable fonts
         }
       }
     }
@@ -65,50 +77,48 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
   const ctx = canvas.getContext('2d');
 
   // Keep canvas background transparent so text and photo overlay cleanly on page background
-  // LEFT SIDE: Center Aligned 4 Text Lines (Width: 0 to 680pt)
-  const leftWidth = 680 * scale;
+  // LEFT SIDE: Center Aligned 4 Text Lines (Width: 65% of 1080 = 702pt)
+  const leftWidth = 702 * scale;
   const centerX = leftWidth / 2;
-  const maxTextWidth = 620 * scale;
+  const maxTextWidth = 660 * scale;
 
-  const fontFamilyBold = 'NotoSansDevanagariBold, MuktaBold, sans-serif';
-  const fontFamilyReg = 'NotoSansDevanagariRegular, MuktaRegular, sans-serif';
+  const fontFamilyPrimary = '"Noto Sans Devanagari", "Liberation Sans", "FreeSans", "IPAGothic", sans-serif';
 
   // Helper function to prepare line specs and render grouped, centered text block
   const lineSpecs = [
     {
       text: data.businessName || 'नाव / व्यवसायाचे नाव',
       colorHex: '#d20202',
-      isBold: true,
-      defaultSizePt: (data.businessName || '').length > 35 ? 53 : (data.businessName || '').length > 22 ? 65 : 82
+      fontWeight: '700',
+      defaultSizePt: (data.businessName || '').length > 35 ? 53.03 : (data.businessName || '').length > 22 ? 65.02 : 81.97
     },
     {
       text: data.proprietorName || 'प्रोप्रायटर / हुद्दा',
       colorHex: '#000000',
-      isBold: true,
-      defaultSizePt: (data.proprietorName || '').length > 35 ? 45.8 : (data.proprietorName || '').length > 22 ? 55.4 : 67.5
+      fontWeight: '700',
+      defaultSizePt: (data.proprietorName || '').length > 35 ? 45.79 : (data.proprietorName || '').length > 22 ? 55.40 : 67.50
     },
     {
       text: data.address || 'पत्ता / इतर माहिती',
       colorHex: '#000000',
-      isBold: false,
-      defaultSizePt: (data.address || '').length > 40 ? 41 : (data.address || '').length > 25 ? 48.2 : 57.8
+      fontWeight: '600',
+      defaultSizePt: (data.address || '').length > 40 ? 41.04 : (data.address || '').length > 25 ? 48.17 : 57.78
     },
     {
       text: (data.mobileNumber ? `मो. ${data.mobileNumber}` : 'मोबाईल नंबर'),
       colorHex: '#000000',
-      isBold: false,
-      defaultSizePt: (data.mobileNumber || '').length > 20 ? 38.5 : (data.mobileNumber || '').length > 14 ? 45.8 : 55.4
+      fontWeight: '600',
+      defaultSizePt: (data.mobileNumber || '').length > 20 ? 38.45 : (data.mobileNumber || '').length > 14 ? 45.79 : 55.40
     }
   ];
 
   // Prepare wrapped lines and dimensions for all items
   const preparedItems = lineSpecs.map(spec => {
-    const fontFam = spec.isBold ? fontFamilyBold : fontFamilyReg;
-    const fontWeight = spec.isBold ? 'bold' : '600';
+    const fontWeight = spec.fontWeight;
     let fontSize = spec.defaultSizePt * scale;
 
     const wrapText = (str: string, sz: number): string[] => {
-      ctx.font = `${fontWeight} ${sz}px ${fontFam}`;
+      ctx.font = `${fontWeight} ${sz}px ${fontFamilyPrimary}`;
       const words = str.split(' ');
       const lines: string[] = [];
       let currentLine = '';
@@ -137,7 +147,6 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
 
     return {
       spec,
-      fontFam,
       fontWeight,
       fontSize,
       lineHeight,
@@ -146,7 +155,7 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
     };
   });
 
-  const interItemGap = 4.82 * scale; // Gap matching preview flex gap-[0.45cqw] (0.446% of container width)
+  const interItemGap = 4.86 * scale; // Gap matching preview flex gap-[0.45cqw] (0.45% of container width)
   const totalBlockHeight = preparedItems.reduce((acc, item) => acc + item.blockHeight, 0) + interItemGap * (preparedItems.length - 1);
 
   // Vertically center the entire 4-line text block inside the 450pt (900px) height container
@@ -158,7 +167,7 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
   preparedItems.forEach(item => {
     ctx.fillStyle = item.spec.colorHex;
     item.lines.forEach(line => {
-      ctx.font = `${item.fontWeight} ${item.fontSize}px ${item.fontFam}`;
+      ctx.font = `${item.fontWeight} ${item.fontSize}px ${fontFamilyPrimary}`;
       const lineCenterY = currentY + item.lineHeight / 2;
       ctx.fillText(line, centerX, lineCenterY);
       currentY += item.lineHeight;
@@ -213,7 +222,7 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
 
   if (!photoDrawn) {
     ctx.fillStyle = '#B8860B';
-    ctx.font = `bold ${26 * scale}px ${fontFamilyBold}`;
+    ctx.font = `bold ${26 * scale}px ${fontFamilyPrimary}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('फोटो स्थान', pX + pW / 2, pY + pH / 2);

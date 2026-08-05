@@ -9,7 +9,7 @@ export async function uploadPhoto(file: File): Promise<{ photoUrl: string; photo
     body: formData,
   });
 
-  const contentType = response.headers.get('content-type') || '';
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
 
   if (!response.ok) {
     let errorMsg = 'फोटो अपलोड अयशस्वी झाला.';
@@ -20,9 +20,21 @@ export async function uploadPhoto(file: File): Promise<{ photoUrl: string; photo
     throw new Error(errorMsg);
   }
 
-  if (contentType.includes('application/json')) {
-    return response.json();
+  // Parse JSON response safely
+  try {
+    const data = await response.json();
+    if (data && (data.photoUrl || data.success)) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Failed to parse upload photo JSON:', err);
   }
+
+  if (contentType.includes('application/json')) {
+    const data = await response.json().catch(() => null);
+    if (data && data.photoUrl) return data;
+  }
+
   throw new Error('फोटो अपलोड प्रतिसाद अयोग्य आहे.');
 }
 
@@ -32,7 +44,7 @@ export async function createRazorpayOrder(): Promise<RazorpayOrderResponse> {
     headers: { 'Content-Type': 'application/json' },
   });
 
-  const contentType = response.headers.get('content-type') || '';
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
 
   if (!response.ok) {
     let errorMsg = 'पेमेंट ऑर्डर तयार करता आली नाही.';
@@ -43,9 +55,15 @@ export async function createRazorpayOrder(): Promise<RazorpayOrderResponse> {
     throw new Error(errorMsg);
   }
 
-  if (contentType.includes('application/json')) {
-    return response.json();
+  try {
+    const data = await response.json();
+    if (data && data.orderId) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Failed to parse order JSON:', err);
   }
+
   throw new Error('प्रतिसाद अयोग्य आहे.');
 }
 
@@ -60,7 +78,7 @@ export async function verifyPaymentSession(paymentDetails: {
     body: JSON.stringify(paymentDetails),
   });
 
-  const contentType = response.headers.get('content-type') || '';
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
 
   if (!response.ok) {
     let errorMsg = 'पेमेंट पडताळणीमध्ये त्रुटी आली.';
@@ -71,9 +89,15 @@ export async function verifyPaymentSession(paymentDetails: {
     throw new Error(errorMsg);
   }
 
-  if (contentType.includes('application/json')) {
-    return response.json();
+  try {
+    const data = await response.json();
+    if (data && data.sessionToken) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Failed to parse verify session JSON:', err);
   }
+
   throw new Error('प्रतिसाद अयोग्य आहे.');
 }
 

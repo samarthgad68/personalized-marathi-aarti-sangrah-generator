@@ -47,20 +47,29 @@ export const FormSection: React.FC<FormSectionProps> = ({
     setErrors((prev) => ({ ...prev, photo: undefined }));
     setIsUploading(true);
 
-    try {
-      const localUrl = URL.createObjectURL(file);
-      setFormData((prev) => ({ ...prev, photoFile: file, photoUrl: localUrl }));
+    // Read file as Data URL (base64) so it works offline and in PDF generator regardless of upload endpoint status
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target?.result as string;
+      setFormData((prev) => ({ ...prev, photoFile: file, photoUrl: dataUrl }));
 
-      const res = await uploadPhoto(file);
-      if (res && res.photoUrl) {
-        setFormData((prev) => ({ ...prev, photoUrl: res.photoUrl }));
+      try {
+        const res = await uploadPhoto(file);
+        if (res && res.photoUrl) {
+          setFormData((prev) => ({ ...prev, photoUrl: res.photoUrl }));
+        }
+      } catch (err: any) {
+        console.warn('Background photo upload warning (fallback to base64 data URL):', err?.message || err);
+        // Base64 photoUrl is already set and fully functional for preview and PDF rendering
+      } finally {
+        setIsUploading(false);
       }
-    } catch (err: any) {
-      console.error('Photo upload warning:', err);
-      // Keep local preview URL so the user still sees their uploaded image
-    } finally {
+    };
+    reader.onerror = () => {
       setIsUploading(false);
-    }
+      setErrors((prev) => ({ ...prev, photo: 'फोटो वाचताना त्रुटी आली.' }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const validate = (): boolean => {
