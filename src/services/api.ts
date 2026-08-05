@@ -9,12 +9,21 @@ export async function uploadPhoto(file: File): Promise<{ photoUrl: string; photo
     body: formData,
   });
 
+  const contentType = response.headers.get('content-type') || '';
+
   if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || 'फोटो अपलोड अयशस्वी झाला.');
+    let errorMsg = 'फोटो अपलोड अयशस्वी झाला.';
+    if (contentType.includes('application/json')) {
+      const errData = await response.json().catch(() => ({}));
+      errorMsg = errData.error || errorMsg;
+    }
+    throw new Error(errorMsg);
   }
 
-  return response.json();
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+  throw new Error('फोटो अपलोड प्रतिसाद अयोग्य आहे.');
 }
 
 export async function createRazorpayOrder(): Promise<RazorpayOrderResponse> {
@@ -23,12 +32,21 @@ export async function createRazorpayOrder(): Promise<RazorpayOrderResponse> {
     headers: { 'Content-Type': 'application/json' },
   });
 
+  const contentType = response.headers.get('content-type') || '';
+
   if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || 'पेमेंट ऑर्डर तयार करता आली नाही.');
+    let errorMsg = 'पेमेंट ऑर्डर तयार करता आली नाही.';
+    if (contentType.includes('application/json')) {
+      const errData = await response.json().catch(() => ({}));
+      errorMsg = errData.error || errorMsg;
+    }
+    throw new Error(errorMsg);
   }
 
-  return response.json();
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+  throw new Error('प्रतिसाद अयोग्य आहे.');
 }
 
 export async function verifyPaymentSession(paymentDetails: {
@@ -42,12 +60,21 @@ export async function verifyPaymentSession(paymentDetails: {
     body: JSON.stringify(paymentDetails),
   });
 
+  const contentType = response.headers.get('content-type') || '';
+
   if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || 'पेमेंट पडताळणीमध्ये त्रुटी आली.');
+    let errorMsg = 'पेमेंट पडताळणीमध्ये त्रुटी आली.';
+    if (contentType.includes('application/json')) {
+      const errData = await response.json().catch(() => ({}));
+      errorMsg = errData.error || errorMsg;
+    }
+    throw new Error(errorMsg);
   }
 
-  return response.json();
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+  throw new Error('प्रतिसाद अयोग्य आहे.');
 }
 
 async function resolvePhotoUrlForPayload(photoUrl?: string): Promise<string | undefined> {
@@ -87,8 +114,13 @@ export async function generatePDFWithSession(
   });
 
   if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || 'PDF निर्मितीमध्ये त्रुटी आली.');
+    const contentType = response.headers.get('content-type') || '';
+    let errorMsg = 'PDF निर्मितीमध्ये त्रुटी आली.';
+    if (contentType.includes('application/json')) {
+      const errData = await response.json().catch(() => ({}));
+      errorMsg = errData.error || errorMsg;
+    }
+    throw new Error(errorMsg);
   }
 
   const blob = await response.blob();
@@ -122,8 +154,13 @@ export async function verifyPaymentAndDownloadPDF(paymentData: PaymentVerificati
   });
 
   if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || 'PDF निर्मितीमध्ये त्रुटी आली.');
+    const contentType = response.headers.get('content-type') || '';
+    let errorMsg = 'PDF निर्मितीमध्ये त्रुटी आली.';
+    if (contentType.includes('application/json')) {
+      const errData = await response.json().catch(() => ({}));
+      errorMsg = errData.error || errorMsg;
+    }
+    throw new Error(errorMsg);
   }
 
   // Handle PDF Blob Download directly in browser

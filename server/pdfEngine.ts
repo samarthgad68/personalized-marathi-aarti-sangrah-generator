@@ -2,10 +2,7 @@ import regeneratorRuntime from 'regenerator-runtime';
 import fs from 'fs';
 import path from 'path';
 import { PDFDocument, rgb } from 'pdf-lib';
-import * as fontkitModule from 'fontkit';
 import { createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
-
-const fontkit = (fontkitModule as any).default || fontkitModule;
 
 if (typeof globalThis !== 'undefined') {
   (globalThis as any).regeneratorRuntime = regeneratorRuntime;
@@ -227,26 +224,6 @@ async function renderFooterPngBuffer(data: PersonalizedData): Promise<Buffer> {
 
 export async function generate52PagePDF(data: PersonalizedData, outputPath: string): Promise<string> {
   const pdfDoc = await PDFDocument.create();
-
-  // Register fontkit on pdfDoc and embed Unicode Devanagari TTF fonts
-  pdfDoc.registerFontkit(fontkit);
-
-  const fontPathBold = path.join(process.cwd(), 'assets/fonts/Mukta-Bold.ttf');
-  const fontPathRegular = path.join(process.cwd(), 'assets/fonts/Mukta-Regular.ttf');
-  if (fs.existsSync(fontPathBold)) {
-    try {
-      await pdfDoc.embedFont(fs.readFileSync(fontPathBold));
-    } catch (fontErr) {
-      console.warn('Could not embed Mukta-Bold font:', fontErr);
-    }
-  }
-  if (fs.existsSync(fontPathRegular)) {
-    try {
-      await pdfDoc.embedFont(fs.readFileSync(fontPathRegular));
-    } catch (fontErr) {
-      console.warn('Could not embed Mukta-Regular font:', fontErr);
-    }
-  }
 
   // Generate the high-resolution shaped footer image
   const footerPngBuffer = await renderFooterPngBuffer(data);
