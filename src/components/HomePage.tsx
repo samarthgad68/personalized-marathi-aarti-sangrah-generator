@@ -5,7 +5,7 @@ import { ThumbnailPreview } from './ThumbnailPreview';
 import { Footer } from './Footer';
 import { PolicyType } from '../types';
 import { createRazorpayOrder, verifyPaymentSession } from '../services/api';
-import { ShieldCheck, Sparkles, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { ShieldCheck, Sparkles, Lock, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -29,8 +29,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onPaymentSuccess, onOpenPoli
     setSuccessMsg(null);
 
     try {
+      // 1. Create Razorpay order
       const orderRes = await createRazorpayOrder();
 
+      // 2. Test mode fallback (when Razorpay SDK or live keys absent)
       if (orderRes.isTestMode || !window.Razorpay) {
         setSuccessMsg('पेमेंट यशस्वी झाले! तुम्हाला आरती संग्रह तयार करण्याच्या पेजवर पाठवले जात आहे...');
 
@@ -47,6 +49,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onPaymentSuccess, onOpenPoli
         return;
       }
 
+      // 3. Razorpay Live Checkout
       const options = {
         key: orderRes.keyId,
         amount: orderRes.amount,
@@ -101,10 +104,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onPaymentSuccess, onOpenPoli
   return (
     <div className="min-h-screen bg-[#FAF6EE] text-[#3E2723] font-['Noto_Sans_Devanagari',sans-serif] flex flex-col justify-between">
       <div>
+        {/* Header Section */}
         <Header />
+
+        {/* Product Information & Features Section */}
         <FeatureSection />
+
+        {/* Aarti Sangrah Gallery / Thumbnail Preview Section */}
         <ThumbnailPreview />
 
+        {/* Prominent ₹99 CTA Payment Button Section */}
         <section id="cta-payment-section" className="py-8 px-4 max-w-3xl mx-auto text-center">
           <div className="bg-[#FFFDF8] border-2 border-[#D4AF37] rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 bg-[#FF9933] text-[#6B1212] px-4 py-1 text-xs font-bold rounded-full shadow-md">
@@ -118,6 +127,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onPaymentSuccess, onOpenPoli
               फक्त ₹99 भरून लगेच तुमच्या व्यवसायाच्या / नावाच्या माहितीसह ५२ पानांचा वैयक्तिकृत आरती संग्रह डाउनलोड करा.
             </p>
 
+            {/* Error / Success Messages on UI if needed */}
             {errorMsg && (
               <div className="bg-red-50 border border-red-300 text-red-700 p-3 rounded-xl text-xs font-semibold mb-4 flex items-center justify-center gap-2 max-w-md mx-auto">
                 <AlertCircle className="w-5 h-5 shrink-0" />
@@ -132,6 +142,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onPaymentSuccess, onOpenPoli
               </div>
             )}
 
+            {/* Direct Payment Button */}
             <button
               onClick={handleStartPayment}
               disabled={loading}
@@ -140,7 +151,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onPaymentSuccess, onOpenPoli
               {loading ? (
                 <>
                   <Loader2 className="w-6 h-6 text-[#FFD700] animate-spin" />
-                  <span>पेमेंट प्रक्रिया सुरू होत आहे...</span>
+                  <span>पेमेंट गेटवे लोड होत आहे...</span>
                 </>
               ) : (
                 <>
@@ -158,6 +169,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onPaymentSuccess, onOpenPoli
         </section>
       </div>
 
+      {/* Footer */}
       <Footer onOpenPolicy={onOpenPolicy} />
     </div>
   );
